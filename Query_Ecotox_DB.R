@@ -5,18 +5,19 @@ require(data.table)
 
 }
 
-source("./R/EcoToxDB/Create_project.R")
+source("./R/Create_project.R")
 
 
 
 set.seed(4711456)
-#source('C:/git/Environmental_Priority_Mixtures/R/helperfunctions.R')
-#database_path <- "Y:/Home/schulzet/UFZ/Databases/Ecotox/current" #MSG
-database_path <- "d:/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/Current" #WANA61
-#database_path <- "d:/Daten/UFZ/UFZ_Data/Databases/Ecotox/current" #home
 
+# Declare the database folder including the current version of EcoToX Knowledgebase
+# A comprehensive name is for example "EcoTox_Fish_EC50"
 
-project_path <- "d:/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/Crust_Selection_EC50"
+database_path <- "your_database"
+
+# Declare the project folder to store the files of your query
+project_path <- "your_project"
 
 # create the project
 project <- create_project(database_path, project_path,
@@ -24,33 +25,47 @@ project <- create_project(database_path, project_path,
                           initalise_project = TRUE,
                           load_default = TRUE)
 
+# initialise_database_project (TRUE/FALSE) - create a new basic database out of the EcoTox ASCII files
+# needs to be run each time the ASCII files are updated
+#
+# initialse_project (TRUE / FALSE): create the project folder
+#
+# load_default (TRUE / FALSE): copy the default database project from database folder to project folder
 
-#effects <- c("GRO", "DEV", "MPH", "MOR", "POP") # Fish
-effects <- c("GRO","MPH","MOR","POP") # Algae, Crustacean
-#effect = c("MOR","GRO","DEV")
-# habitat = c("Non-Soil","Water","Soil")
 
-project <- prepare_data(project, habitat = c("Water", "Non-Soil"),
+# Declare effects of interest for the different species groups
+# See EcoTox Knowledgebase documentation for the details
+#
+
+# Step 1: Run the first data preparation step to create the initial project
+
+project <- prepare_data(project = project,
+                        habitat = c("Water", "Non-Soil"),
                         effects = c("MOR", "GRO", "POP"),
-                        remove_formulation = TRUE)
+                        save_project = TRUE,
+                        remove_formulation = TRUE, )
 
+# Reload the results of the first step
 # load(file.path(project_path,"initial_project.RData"))
-# Process group specific data
 
-#measurement = c("MORT","GGRO","SURV","GMOR")
-# Fish
+
+
+# Declare species group specific data
+
+# Fish / Crustacean
 measurements = c("MORT", "SURV")
-# Crustacean / Insects
 
 # Algae
 #measurements = c("ABND","APCY","BMAS","CHLC","CHLO","CHLA","DBMS","DWGT","GPOP","GMOR","GGRO","INDX","MORT","PSYN","PSII","PPYT","PGRT","SPGR","SURV","VOLU","WGHT","WWGT")
 
+# Declare the ecotox group
 #ecotoxgroup = "Algae"
 #ecotoxgroup = "Fish"
 ecotoxgroup = "Crustacean"
 
 
-# Prepare the endpoint and species lists for edits
+# Step 2: Filter the data on the specified criteria
+# A list of endpoints and species lists are stored in the project folder for selection
 
 project <- process_data(project, ecotoxgroup = ecotoxgroup,
                         max_h = 120, max_d = 5,
@@ -58,7 +73,8 @@ project <- process_data(project, ecotoxgroup = ecotoxgroup,
 
 #load(file = file.path(project_path,paste0(ecotoxgroup,"_state1.RData")))
 
-# Read the modified lists in and process the data including unit conversion
+# Step 3: Read the modified lists in and process the data including unit conversion
+# A list of chemicals is stored to update missing information on mol weights for data conversion
 
 project <- process_data(project, ecotoxgroup = ecotoxgroup,
                         max_h = 120, max_d = 5,
@@ -66,7 +82,12 @@ project <- process_data(project, ecotoxgroup = ecotoxgroup,
 
 #load(file = file.path(project_path,paste0(ecotoxgroup,"_state2.RData")))
 
+
+# Step 4:
 # Read in the the modified mol table and finally process the unit conversion
+# This step creates a file named for example "fish_chemical_list.csv"
+# Edit this list to include newly added compounds (imputation of phys.-
+# chem. propertis and metadata)
 
 project <- process_data(project, ecotoxgroup = ecotoxgroup,
                         max_h = 120, max_d = 5,
@@ -74,31 +95,27 @@ project <- process_data(project, ecotoxgroup = ecotoxgroup,
 
 # load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
 
-# Process the final results and estimate the solubility domain
+# Step 5:Process the final results and estimate the solubility domain
+# Optional: Update the basic chemical list in the database folder
+
 project <- process_data(project, ecotoxgroup = ecotoxgroup,
                         max_h = 120, max_d = 5,
-                        measurements = measurements
+                        measurements = measurements,
+                        update_chemicals = FALSE
                         )
 
-#project2 -> project
-
-#project$object$state
-#object <- project$object
 
 #load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
 # save(project,file = file.path(project_path,paste0(prefix,"_pre_exclusion_project.RData")), compress = TRUE)
 
 
-# calculate and export the pivot table
+# Step 6: calculate and export the pivot table aggregating the results
 project <- calculate_pivot_table(project = project, quantile = 0.05)
 
 
 
 # do some final stuff
 save(project,file = file.path(project_path,paste0(ecotoxgroup,"_processed_project.RData")), compress = TRUE)
-#load(file.path(project_path,"Fish_selected_pre_exclusion_project.RData"))
-
-
 rstudioapi::documentSave()
 r_file <- rstudioapi::getSourceEditorContext()$path
 file.copy(r_file,file.path(project_path),overwrite = TRUE)
