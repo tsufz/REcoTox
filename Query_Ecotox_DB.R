@@ -12,17 +12,11 @@ source("./R/EcoToxDB/Create_project.R")
 set.seed(4711456)
 #source('C:/git/Environmental_Priority_Mixtures/R/helperfunctions.R')
 #database_path <- "Y:/Home/schulzet/UFZ/Databases/Ecotox/current" #MSG
-database_path <- "d:/UFZ_DATA/UFZ/Databases/Ecotox/Current" #WANA61
+database_path <- "d:/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/Current" #WANA61
 #database_path <- "d:/Daten/UFZ/UFZ_Data/Databases/Ecotox/current" #home
 
-#project_path <- "Y:/Home/schulzet/UFZ/Projekte/EcoToxDB/EcoTox_Algae_selected_species_XX50"
-project_path <- "d:/UFZ_DATA/UFZ/Projekte/EcoToxDB/Chironimus_EC50"
-#project_path <- "d:/daten/UFZ/UFZ_Data/Projekte/EcoToxDB/EcoTox_Algae_selected_species_XX50"
 
-
-# create the project
-
-
+project_path <- "d:/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/Crust_Selection_EC50"
 
 # create the project
 project <- create_project(database_path, project_path,
@@ -31,22 +25,21 @@ project <- create_project(database_path, project_path,
                           load_default = TRUE)
 
 
-#effects <- c("GRO","DEV","MPH","MOR","POP") # Fish
-#effects <- c("GRO","MPH","MOR","POP") # Algae, Crustacean
+#effects <- c("GRO", "DEV", "MPH", "MOR", "POP") # Fish
+effects <- c("GRO","MPH","MOR","POP") # Algae, Crustacean
 #effect = c("MOR","GRO","DEV")
-#habitat = c("Non-Soil","Water","Soil")
+# habitat = c("Non-Soil","Water","Soil")
 
-project <- prepare_data(project, habitat = c("Water","Non-Soil"),
-                        #effects = c("MOR","GRO","POP"),
-                        effects = c("GRO","DEV","MPH","MOR","POP"),
+project <- prepare_data(project, habitat = c("Water", "Non-Soil"),
+                        effects = c("MOR", "GRO", "POP"),
                         remove_formulation = TRUE)
 
-load(file.path(project_path,"initial_project.RData"))
+# load(file.path(project_path,"initial_project.RData"))
 # Process group specific data
 
 #measurement = c("MORT","GGRO","SURV","GMOR")
 # Fish
-measurements = c("MORT","SURV")
+measurements = c("MORT", "SURV")
 # Crustacean / Insects
 
 # Algae
@@ -54,14 +47,7 @@ measurements = c("MORT","SURV")
 
 #ecotoxgroup = "Algae"
 #ecotoxgroup = "Fish"
-#ecotoxgroup = "Crustacean"
-ecotoxgroup = "Insects" # Chironimus included here
-#ecotoxgroup = "Worms" # Nematods
-#ecotoxgroup = "Mammals"
-#ecotoxgroup = "Reptiles"
-#ecotoxgroup = "Amphibians"
-#ecotoxgroup = "Ivertebrates" # Other invertebrates
-
+ecotoxgroup = "Crustacean"
 
 
 # Prepare the endpoint and species lists for edits
@@ -86,20 +72,21 @@ project <- process_data(project, ecotoxgroup = ecotoxgroup,
                         max_h = 120, max_d = 5,
                         measurements = measurements)
 
-#load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
+# load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
 
 # Process the final results and estimate the solubility domain
 project <- process_data(project, ecotoxgroup = ecotoxgroup,
                         max_h = 120, max_d = 5,
-                        measurements = measurements)
+                        measurements = measurements
+                        )
 
 #project2 -> project
 
 #project$object$state
 #object <- project$object
 
-#load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
-#save(project,file = file.path(project_path,paste0(prefix,"_pre_exclusion_project.RData")), compress = TRUE)
+#load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
+# save(project,file = file.path(project_path,paste0(prefix,"_pre_exclusion_project.RData")), compress = TRUE)
 
 
 # calculate and export the pivot table
