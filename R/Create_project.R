@@ -15,7 +15,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
     project$database_path <- suppressWarnings(normalizePath(database_path))
     object <- project$object
     project$files <- normalizePath(list.files(database_path, pattern = "*.txt", full.names = T, recursive = T))
-    message("[EcoToxR]:  A new project is initialised in the database folder. The old will be overwritten.")
+    message("[EcoToxR]:  Initializing a new project in the database folder. The old will be overwritten.")
 
     # read the file list and harmonise use of NA
     message("[EcoToxR]:  Read the Ecotox Knowledgebase ASCII files.")
@@ -50,7 +50,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
                                                                  substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)) - 2, nchar(as.character(object$chemicals$cas_number)) - 1), "-",
                                                                  substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)), nchar(as.character(object$chemicals$cas_number)))))
 
-    message("[EcoToxR]:  The basic project is saved in the database folder.")
+    message("[EcoToxR]:  Saving the basic project in the database folder.")
     project$object <- object
     object <- NULL
     save(project, file = file.path(database_path,"project.RData"), compress = TRUE)
@@ -60,7 +60,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
   if (initalise_project == TRUE) {
     # Check the directory
     if (!dir.exists(project_path)) {
-      message("[EcoToxR]:  The project directory is created.")
+      message("[EcoToxR]:  Creating the project directory.")
       dir.create(project_path)
     } else if (!is_empty(project_path)) {
       message("[EcoToxR]:  The project directory is not empty. Please checkout content")
@@ -78,7 +78,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
   }
 
   if (load_default == TRUE) {
-    message("[EcoToxR]:  The default project file is loaded.")
+    message("[EcoToxR]:  Loading the default project file.")
     load(file.path(database_path,"project.RData"))
     project$database_path <- suppressWarnings(normalizePath(database_path))
     project$project_path <- suppressWarnings(normalizePath(project_path))
