@@ -14,10 +14,10 @@ set.seed(4711456)
 # Declare the database folder including the current version of EcoToX Knowledgebase
 # A comprehensive name is for example "EcoTox_Fish_EC50"
 
-database_path <- "your_database"
+database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
 
 # Declare the project folder to store the files of your query
-project_path <- "your_project"
+project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Daphnia_EC10_EC90"
 
 # create the project
 project <- create_project(database_path, project_path,
@@ -43,7 +43,7 @@ project <- prepare_data(project = project,
                         habitat = c("Water", "Non-Soil"),
                         effects = c("MOR", "GRO", "POP"),
                         save_project = TRUE,
-                        remove_formulation = TRUE, )
+                        remove_formulation = TRUE)
 
 # Reload the results of the first step
 # load(file.path(project_path,"initial_project.RData"))
