@@ -23,7 +23,7 @@ calculate_pivot_table <- function(project, quantile = NA, limit_S_AD = NA, rerea
                      geomean_value_mg_L = suppressWarnings(signif(EnvStats::geoMean(concentration_mean, na.rm = TRUE),4)),
                      #geosd_value_mg_L = suppressWarnings(signif(EnvStats::geoSD(concentration_mean, na.rm = TRUE),4)),
                      median_value_mg_L = signif(median(concentration_mean, na.rm = TRUE),4),
-                     count = signif(sum(!is.na(concentration_mean)),4),
+                     result_count = signif(sum(!is.na(concentration_mean)),4),
                      reference_count = length(unique(reference_number)),
                      #latin_name_count = length(unique(latin_name)),
                      OPERA_S_mg_L = signif(min(OPERA_S_mg_L, na.rm = TRUE), 4),
@@ -35,7 +35,7 @@ calculate_pivot_table <- function(project, quantile = NA, limit_S_AD = NA, rerea
                      JC_S_mg_L = signif(min(JC_S_mg_L,na.rm = TRUE), 4),
                      JC_mean_AD_S = mean(JC_S_mg_L_AD, na.rm = TRUE),
                      JC_AD_min_S = min(JC_S_mg_L_AD, na.rm = TRUE),
-                     Consensus_AD = signif(mean(c(OPERA_AD_mean_S,ACD_AD_mean_S, JC_mean_AD_S), na.rm = TRUE), 2),
+                     REcoTox_consensus_AD = signif(mean(c(OPERA_AD_mean_S,ACD_AD_mean_S, JC_mean_AD_S), na.rm = TRUE), 2),
                      duration_min_h = min(obs_duration_mean, na.rm = TRUE),
                      duration_max_h = max(obs_duration_mean, na.rm = TRUE),
 
@@ -87,17 +87,17 @@ calculate_pivot_table <- function(project, quantile = NA, limit_S_AD = NA, rerea
                                                   "AVERAGE_MASS", "MONOISOTOPIC_MASS")], by = "cas_number")
 
   #Resample the output
-  results_pivot <- results_pivot[c("cas_number", "PREFERRED_NAME", "quantile", "quantile_value_mg_L","min_value_mg_L",
+  results_pivot <- results_pivot[c("cas_number", "DTXSID", "INCHIKEY", "PREFERRED_NAME", "quantile", "quantile_value_mg_L","min_value_mg_L",
                                    "max_value_mg_L",
                                    "mean_value_mg_L",
                                    #"sd_value_mg_L",
                                    "geomean_value_mg_L",
                                    #"geosd_value_mg_L",
                                    "median_value_mg_L",
-                                   "count",
+                                   "result_count",
                                    "reference_count",
                                    #"latin_name_count",
-                                   "Consensus_AD",
+                                   "REcoTox_consensus_AD",
                                    "duration_min_h",
                                    "duration_max_h",
                                    "duration_list",
