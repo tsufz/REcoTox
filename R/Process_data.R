@@ -1,7 +1,7 @@
 # functions
 
   process_data <- function(project,
-                           ecotoxgroup = c("Algae","Crustacean","Fish","Insects"),
+                           ecotox_group = NA,
                            sample_size = NA,
                            all_species = FALSE,
                            measurements = c("MORT","GGRO","SURV"),
@@ -21,7 +21,7 @@
 
 
     # Record the settings
-    object$parameters$ecotoxgroup <- ecotoxgroup
+    object$parameters$ecotox_group <- ecotox_group
     object$parameters$measurements <- measurements
     object$parameters$min_h <- min_d
     object$parameters$min_d <- min_d
@@ -37,9 +37,10 @@
     # Workflow step 1
     if(is.null(object$state) == TRUE){
       # Do preliminary filtering (group and effects)
-      message("[EcoToxR]:  Filtering the datasets by the ecotox group.")
-
-      all_selected_effects <- data.table(object$all_selected_effects[ecotox_group %like% ecotoxgroup])
+      if (!is.na(object$parameters$ecotox_group <- ecotox_group)) {
+          message("[EcoToxR]:  Filtering the datasets by the ecotox group (species group).")
+          all_selected_effects <- data.table(object$all_selected_effects[ecotox_group %like% ecotox_group])
+       }
 
       # Select mortality records only
       message("[EcoToxR]:  The following ecotox group(s) are included:")
@@ -53,7 +54,7 @@
 
       # Subset algae data to kingdom
 
-      if(ecotoxgroup == "Algae"){
+      if(ecotox_group == "Algae"){
         object$mortality <- object$mortality[kingdom %in% kingdoms]
       }
 
@@ -70,7 +71,7 @@
       mortality_d <- subset(mortality_d, obs_duration_mean >= min_d)
       mortality_d <- subset(mortality_d, obs_duration_mean <= max_d)
 
-      object$mortality <- data.table(rbind(mortality_h,mortality_d))
+      object$mortality <- data.table(rbind(mortality_h, mortality_d))
 
       mortality_h <- NULL
       mortality_d <- NULL
@@ -98,13 +99,13 @@
           include <- NULL
 
           for(i in 1:nrow(species)){
-            species$count_of_records[i] <- length(which(object$mortality[,species_number] ==
-                                                                    species[,species_number][i]))
+            species$count_of_records[i] <- length(which(object$mortality[, species_number] ==
+                                                                    species[, species_number][i]))
           }
 
           message("[EcoToxR]:  The table with the species was written to the project folder.")
           #message("[EcoToxR]:  Please edit the file and rerun the workflow.")
-          fwrite(species, suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotoxgroup),"_species_selection.csv")))),  sep = ",", dec = ".")
+          fwrite(species, suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotox_group),"_species_selection.csv")))),  sep = ",", dec = ".")
       }
 
 
@@ -113,32 +114,32 @@
       colnames(include) <- "include_endpoint"
       colnames(endpoints)[1] <- "endpoint"
       endpoints <- data.table(include, endpoints)
-      endpoints <- endpoints[order(endpoint),]
+      endpoints <- endpoints[order(endpoint), ]
       include <- NULL
 
 
       for(i in 1:nrow(endpoints)){
-        endpoints$count[i] <- length(which(object$mortality[,endpoint] ==  endpoints[,endpoint][i]))
+        endpoints$count[i] <- length(which(object$mortality[, endpoint] ==  endpoints[, endpoint][i]))
 
       }
 
       message("[EcoToxR]:  The table with the endpoints was written to the project folder.")
       message("[EcoToxR]:  Edit the file(s) and re-run the workflow.")
-      fwrite(endpoints, suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotoxgroup),"_endpoint_selection.csv")))),  sep = ",", dec = ".")
+      fwrite(endpoints, suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotox_group), "_endpoint_selection.csv")))),  sep = ",", dec = ".")
 
       object$state <- 1
 
       project$object <- object
       save_project(project, project_path, save_project_steps)
 
-      fwrite(object$mortality,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotoxgroup),"_mortality_unfiltered.csv")))),  sep = ",", dec = ".")
+      fwrite(object$mortality,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotox_group), "_mortality_unfiltered.csv")))),  sep = ",", dec = ".")
       return(project)
     }
 
     # Workflow step 2
 
     if(object$state == 1){
-      endpoints <- data.table(fread(file.path(project_path,paste0(tolower(ecotoxgroup),"_endpoint_selection.csv"))))
+      endpoints <- data.table(fread(file.path(project_path,paste0(tolower(ecotox_group), "_endpoint_selection.csv"))))
       if(!all(unique(endpoints$include) == 1, na.rm = TRUE)){
         stop("[EcoToxR]:  Only NA or 1 is allowed in the endpoint selection filter. Check the endpoint selection list and re-run the workflow.")
       }
@@ -147,7 +148,7 @@
         stop("[EcoToxR]:  There are only NA in the endpoint selection filter. Check the species selection list and re-run the workflow.")
       }
 
-      object$mortality <- left_join(object$mortality, endpoints[,c(1,2)], by = "endpoint") # merge
+      object$mortality <- left_join(object$mortality, endpoints[, c(1, 2)], by = "endpoint") # merge
       object$mortality_filtered <- data.table((filter(object$mortality, include_endpoint == 1)))
       object$mortality_filtered_removed_endpoint <- filter(object$mortality, is.na(include_endpoint))
 
@@ -157,27 +158,27 @@
       }
 
       if(all_species == FALSE){
-        species <- data.table(fread(file.path(project_path,paste0(tolower(ecotoxgroup),"_species_selection.csv")), sep = ",", dec = "."))
+        species <- data.table(fread(file.path(project_path,paste0(tolower(ecotox_group), "_species_selection.csv")), sep = ",", dec = "."))
         species <- species[order(include_species),]
-        if(!all(unique(species$include) %in% c(1,NA))){
+        if(!all(unique(species$include) %in% c(1, NA))){
           stop("[EcoToxR]:  Only NA or 1 is allowed in the species selection filter. Check the species selection list and re-run the workflow.")
         }
         if(is.na(unique(species$include)[1])){
           stop("[EcoToxR]:  There are only MA in the species selection filter. Check the species selection list and re-run the workflow.")
         }
 
-        object$mortality_filtered <- left_join(object$mortality_filtered, species[,c(1,3)], by = "species_number")
+        object$mortality_filtered <- left_join(object$mortality_filtered, species[, c(1, 3)], by = "species_number")
         object$mortality_filtered <- data.table(filter(object$mortality_filtered, include_species == 1))
         object$mortality_filtered_removed_species <- filter(object$mortality_filtered, is.na(include_species))
-        fwrite(object$mortality_filtered,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotoxgroup),"_mortality_filtered.csv")))),  sep = ",", dec = ".")
-        fwrite(object$mortality_filtered,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotoxgroup),"_mortality_removed_species.csv")))),  sep = ",", dec = ".")
+        fwrite(object$mortality_filtered,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotox_group),"_mortality_filtered.csv")))),  sep = ",", dec = ".")
+        fwrite(object$mortality_filtered,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotox_group),"_mortality_removed_species.csv")))),  sep = ",", dec = ".")
       }
 
       # Check measurements
 
       # Convert the units and save the file
-      object$mortality_filtered <- data.table(convert_units(object$mortality_filtered,sample_size))
-      fwrite(object$mortality_filtered_removed_endpoint,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotoxgroup),"_mortality_removed_endpoints.csv")))),  sep = ",", dec = ".")
+      object$mortality_filtered <- data.table(convert_units(object$mortality_filtered, sample_size))
+      fwrite(object$mortality_filtered_removed_endpoint,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotox_group), "_mortality_removed_endpoints.csv")))),  sep = ",", dec = ".")
 
       # extract mol related records and export for review, alternatively export the file for exclusion review
       if (nrow(object$mortality_filtered[concentration_unit %like% "mol/L"]) > 0){
@@ -201,12 +202,12 @@
 
     if(object$state == 2){
       # update records with mol related concentrations
-      if (file.exists(file.path(project_path,paste0(tolower(object$parameters$ecotoxgroup),"_mol_weight.csv")))){
+      if (file.exists(file.path(project_path, paste0(tolower(object$parameters$ecotox_group), "_mol_weight.csv")))){
         object <- update_mol_units(object = object)
         export_chemical_list(object, project$project_path)
         object$state <- 3
         project$object <- object
-        save_project(project, project_path,save_project_steps)
+        save_project(project, project_path, save_project_steps)
         return(project)
       }
     }
@@ -222,7 +223,7 @@
 
       #object <- calculate_water_solubility(object)
       object$state <- 4
-      fwrite(object$results,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(object$parameters$ecotoxgroup),"_final_results.csv")))), sep = ",", dec = ".", na = NA)
+      fwrite(object$results,suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(object$parameters$ecotox_group), "_final_results.csv")))), sep = ",", dec = ".", na = NA)
       project$object <- object
       save_project(project, project_path,save_project_steps)
       message("[EcoToxR]:  The data pre-processing is finalised.")
