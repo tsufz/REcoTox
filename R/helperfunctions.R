@@ -95,36 +95,44 @@ calculate_water_solubility <- function(object = object){
     total = length_progressbar, clear = FALSE, width = 80)
 
   for(i in s){
-
   AD <- paste0(i, "_AD")
-  results[, "AD"] <- NA
-
+  results[, AD] <- NaN
 
   # If concentration_mean is <= Sw, the
   for(j in 1:nrow(results)){
+   #print(paste0(j, " of ", nrow(results), " in ", i))
+
+
+
     if(is.na(results$EXCLUDE[j]) & is.na(results[j, ..i])){
       results[j, AD] <- NA
+
       }
 
     else if(is.na(results$EXCLUDE[j]) & results$concentration_mean[j] <= results[j, ..i]){
       results[j, AD] <- 3
+
       }
 
     else if(results$concentration_mean[j] > results[j, ..i] & results$concentration_mean[j] <= 10^5 * log10(results[j, ..i])){
       results[j, AD] <- 2
+
       }
 
     else if (results$concentration_mean[j] > 10^5 * log10(results[j, ..i]) & results$concentration_mean[j] <= 10^10 * log10(results[j, ..i])){
       results[j, AD] <- 1
+
       }
 
     else if (results$concentration_mean[j] > 10^10 * log10(results[j, ..i])){
       results[j, AD] <- 0
+
     }
     }
   pb$tick()
-  }
 
+  }
+  #pb$terminate()
   object$results <- data.table(results)
   return(object)
 }
@@ -454,19 +462,22 @@ convert_units <- function(object, sample_size = NA){
   pg <- "^pg/(l|L)$"
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% pg])])
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Converting pg/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    message("[EcoToxR]:  Converting pg/L like unit conversion")
+    object[concentration_unit %like% pg, concentration_mean := concentration_mean / 1e+09]
 
-    for(i in 1:nrow(object[which(object[, concentration_unit %like% pg])])){
-      object[which(object[, concentration_unit %like% pg])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% pg])][i]$concentration_mean / 1e+09
-      pb$tick()
+    # pb <- progress::progress_bar$new(
+    #   format = "[EcoToxR]:  Converting pg/L like units [:bar] :percent ETA: :eta",
+    #   total = length_progressbar, clear = FALSE, width = 80)
+    #
+    # for(i in 1:nrow(object[which(object[, concentration_unit %like% pg])])){
+    #   object[which(object[, concentration_unit %like% pg])][i]$concentration_mean <-
+    #     object[which(object[, concentration_unit %like% pg])][i]$concentration_mean / 1e+09
+    #   pb$tick()
 
-    }
+    #}
 
     object$concentration_unit[which(object[, concentration_unit %like% pg])] <- "mg/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping pg/L like unit conversion")}
 
 
@@ -475,40 +486,51 @@ convert_units <- function(object, sample_size = NA){
 
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% ng])])
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Converting ng/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    message("[EcoToxR]:  Converting ng/L like unit conversion")
+    object[concentration_unit %like% ng, concentration_mean := concentration_mean / 1e+06]
 
-    for(i in 1:nrow(object[which(object[, concentration_unit %like% ng])])){
-      object[which(object[, concentration_unit %like% ng])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% ng])][i]$concentration_mean / 1e+06
-      pb$tick()
-    }
+    # pb <- progress::progress_bar$new(
+    #   format = "[EcoToxR]:  Converting ng/L like units [:bar] :percent ETA: :eta",
+    #   total = length_progressbar, clear = FALSE, width = 80)
+    #
+    # for(i in 1:nrow(object[which(object[, concentration_unit %like% ng])])){
+    #   object[which(object[, concentration_unit %like% ng])][i]$concentration_mean <-
+    #     object[which(object[, concentration_unit %like% ng])][i]$concentration_mean / 1e+06
+    #   pb$tick()
+
 
 
     object$concentration_unit[which(object[, concentration_unit %like% ng])] <- "mg/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping ng/L like unit conversion")}
 
 
   #µg related
   ug <- "(^(|(A|a)(I|E|i|e) )ug/(l|L|dm3)$)|^ppb$|(^pg/u(l|L)$)|(^(|(A|a)(I|E|i|e) )ng/m(l|L)$)|^pg/u(l|L)"
 
+
+
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% ug])])
+
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Converting ug/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    message("[EcoToxR]:  Converting ug/L like unit conversion")
+    object[concentration_unit %like% ug, concentration_mean := concentration_mean / 1e+03]
 
-    for(i in 1:nrow(object[which(object[, concentration_unit %like% ug])])){
-      object[which(object[, concentration_unit %like% ug])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% ug])][i]$concentration_mean / 1e+03
-      pb$tick()
 
-    }
+  # if(length_progressbar > 0){
+  #   pb <- progress::progress_bar$new(
+  #     format = "[EcoToxR]:  Converting ug/L like units [:bar] :percent ETA: :eta",
+  #     total = length_progressbar, clear = FALSE, width = 80)
+  #
+  #   for(i in 1:nrow(object[which(object[, concentration_unit %like% ug])])){
+  #     object[which(object[, concentration_unit %like% ug])][i]$concentration_mean <-
+  #       object[which(object[, concentration_unit %like% ug])][i]$concentration_mean / 1e+03
+  #     pb$tick()
+  #
+  #   }
 
     object$concentration_unit[which(object[, concentration_unit %like% ug])] <- "mg/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping ug/L like units conversion")}
 
   # g/L
@@ -516,19 +538,22 @@ convert_units <- function(object, sample_size = NA){
 
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% g])])
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Converting g/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    message("[EcoToxR]:  Converting g/L like unit conversion")
+    object[concentration_unit %like% g, concentration_mean := concentration_mean * 1e+03]
 
-    for(i in 1:nrow(object[which(object[, concentration_unit %like% g])])){
-      object[which(object[, concentration_unit %like% g])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% g])][i]$concentration_mean*1e+03
-      pb$tick()
+    # pb <- progress::progress_bar$new(
+    #   format = "[EcoToxR]:  Converting g/L like units [:bar] :percent ETA: :eta",
+    #   total = length_progressbar, clear = FALSE, width = 80)
+    #
+    # for(i in 1:nrow(object[which(object[, concentration_unit %like% g])])){
+    #   object[which(object[, concentration_unit %like% g])][i]$concentration_mean <-
+    #     object[which(object[, concentration_unit %like% g])][i]$concentration_mean*1e+03
+    #   pb$tick()
 
-    }
+
 
     object$concentration_unit[which(object[, concentration_unit %like% g])] <- "mg/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping g/L like units conversion")}
 
 
@@ -545,19 +570,22 @@ convert_units <- function(object, sample_size = NA){
 
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% pmol])])
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Converting pmol/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    # pb <- progress::progress_bar$new(
+    #   format = "[EcoToxR]:  Converting pmol/L like units [:bar] :percent ETA: :eta",
+    #   total = length_progressbar, clear = FALSE, width = 80)
+    #
+    # for(i in 1:nrow(object[which(object[, concentration_unit %like% pmol])])){
+    #   object[which(object[, concentration_unit %like% pmol])][i]$concentration_mean <-
+    #     object[which(object[, concentration_unit %like% pmol])][i]$concentration_mean / 1e+12
+    #   pb$tick()
+    #
+    # }
 
-    for(i in 1:nrow(object[which(object[, concentration_unit %like% pmol])])){
-      object[which(object[, concentration_unit %like% pmol])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% pmol])][i]$concentration_mean / 1e+12
-      pb$tick()
-
-    }
+    message("[EcoToxR]:  Converting pmol like unit conversion")
+    object[concentration_unit %like% pmol, concentration_mean := concentration_mean / 1e+12]
 
     object$concentration_unit[which(object[, concentration_unit %like% pmol])] <- "mol/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping pmol/L like unit conversion")}
 
 
@@ -567,19 +595,22 @@ convert_units <- function(object, sample_size = NA){
 
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% nmol])])
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Converting nmol/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    # pb <- progress::progress_bar$new(
+    #   format = "[EcoToxR]:  Converting nmol/L like units [:bar] :percent ETA: :eta",
+    #   total = length_progressbar, clear = FALSE, width = 80)
+    #
+    # for(i in 1:nrow(object[which(object[, concentration_unit %like% nmol])])){
+    #   object[which(object[, concentration_unit %like% nmol])][i]$concentration_mean <-
+    #     object[which(object[, concentration_unit %like% nmol])][i]$concentration_mean / 1e+09
+    #   pb$tick()
+    #
+    # }
 
-    for(i in 1:nrow(object[which(object[, concentration_unit %like% nmol])])){
-      object[which(object[, concentration_unit %like% nmol])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% nmol])][i]$concentration_mean / 1e+09
-      pb$tick()
-
-    }
+    message("[EcoToxR]:  Converting nmol like unit conversion")
+    object[concentration_unit %like% nmol, concentration_mean := concentration_mean / 1e+09]
 
     object$concentration_unit[which(object[, concentration_unit %like% nmol])] <- "mol/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping nmol/L coversion")}
 
   #umol related
@@ -587,19 +618,22 @@ convert_units <- function(object, sample_size = NA){
 
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% umol])])
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Coverting umol/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    # pb <- progress::progress_bar$new(
+    #   format = "[EcoToxR]:  Coverting umol/L like units [:bar] :percent ETA: :eta",
+    #   total = length_progressbar, clear = FALSE, width = 80)
+    #
+    # for(i in 1:nrow(object[which(object[,concentration_unit %like% umol])])){
+    #   object[which(object[, concentration_unit %like% umol])][i]$concentration_mean <-
+    #     object[which(object[, concentration_unit %like% umol])][i]$concentration_mean / 1e+06
+    #   pb$tick()
+    #
+    # }
 
-    for(i in 1:nrow(object[which(object[,concentration_unit %like% umol])])){
-      object[which(object[, concentration_unit %like% umol])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% umol])][i]$concentration_mean / 1e+06
-      pb$tick()
-
-    }
+    message("[EcoToxR]:  Converting umol like unit conversion")
+    object[concentration_unit %like% umol, concentration_mean := concentration_mean / 1e+06]
 
     object$concentration_unit[which(object[, concentration_unit %like% umol])] <- "mol/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping umol/L like unit conversion")}
 
   #mmol related
@@ -607,19 +641,22 @@ convert_units <- function(object, sample_size = NA){
 
   length_progressbar <- nrow(object[which(object[, concentration_unit %like% mmol])])
   if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Converting mmol/L like units [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
+    # pb <- progress::progress_bar$new(
+    #   format = "[EcoToxR]:  Converting mmol/L like units [:bar] :percent ETA: :eta",
+    #   total = length_progressbar, clear = FALSE, width = 80)
+    #
+    # for(i in 1:nrow(object[which(object[, concentration_unit %like% mmol])])){
+    #   object[which(object[, concentration_unit %like% mmol])][i]$concentration_mean <-
+    #     object[which(object[, concentration_unit %like% mmol])][i]$concentration_mean / 1e+03
+    #   pb$tick()
+    #
+    # }
 
-    for(i in 1:nrow(object[which(object[, concentration_unit %like% mmol])])){
-      object[which(object[, concentration_unit %like% mmol])][i]$concentration_mean <-
-        object[which(object[, concentration_unit %like% mmol])][i]$concentration_mean / 1e+03
-      pb$tick()
-
-    }
+    message("[EcoToxR]:  Converting mmol like unit conversion")
+    object[concentration_unit %like% mmol, concentration_mean := concentration_mean / 1e+03]
 
     object$concentration_unit[which(object[, concentration_unit %like% mmol])] <- "mol/L"
-    pb$terminate()
+    #pb$terminate()
   } else {message("[EcoToxR]:  Skipping mmol/L like unit conversion")}
 
   message("[EcoToxR]:  The following units are left in the data:")
