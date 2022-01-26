@@ -3,7 +3,7 @@ source("./R/Prepare_data.R")
 source("./R/Calculate_pivot.R")
 #source("./R/EcoToxDB/Create_project.R")
 source("./R/Process_data.R")
-
+require(progress)
 
 create_project <- function(database_path, project_path, initalise_database_project = FALSE,
                            initalise_project = FALSE, load_default = FALSE){
@@ -32,10 +32,11 @@ create_project <- function(database_path, project_path, initalise_database_proje
       object$species <- fread(project$files[grep("species.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = "")
 
       message("[EcoToxR]:  Read results.")
-      object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
+      #object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
+      object$results <- data.table(read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\""))
 
       message("[EcoToxR]:  Read references.")
-      object$references <- fread(project$files[grep("references.txt",project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = "")
+      object$references <- fread(project$files[grep("references.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = "")
     })
 
     #  Trim lists
