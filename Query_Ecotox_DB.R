@@ -17,11 +17,11 @@ set.seed(4711456)
 database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
 
 # Declare the project folder to store the files of your query
-project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Daphnia_EC10_EC90"
+project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Algae_EC10_EC90"
 
 # create the project
 project <- create_project(database_path, project_path,
-                          initalise_database_project = FALSE,
+                          initalise_database_project = TRUE,
                           initalise_project = TRUE,
                           load_default = TRUE)
 
