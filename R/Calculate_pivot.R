@@ -39,8 +39,9 @@ calculate_pivot_table <- function(project, quantile = NA, limit_S_AD = NA, rerea
                      duration_min_h = min(obs_duration_mean, na.rm = TRUE),
                      duration_max_h = max(obs_duration_mean, na.rm = TRUE),
 
-                     ) %>%  # unique() is needed
-                    dplyr::mutate(quantile = sprintf("%1.0f%%", quantile * 100)) #%>% Optional prettification
+                     )
+                    #%>%  # unique() is needed
+                    #   dplyr::mutate(quantile = sprintf("%1.0f%%", quantile * 100)) #%>% Optional prettification
 
 
   # Add more tricky aggregated columns
@@ -87,7 +88,11 @@ calculate_pivot_table <- function(project, quantile = NA, limit_S_AD = NA, rerea
                                                   "AVERAGE_MASS", "MONOISOTOPIC_MASS")], by = "cas_number")
 
   #Resample the output
-  results_pivot <- results_pivot[c("cas_number", "DTXSID", "INCHIKEY", "PREFERRED_NAME", "quantile", "quantile_value_mg_L","min_value_mg_L",
+  results_pivot <- results_pivot[c("cas_number",
+                                   "PREFERRED_NAME",
+                                   "quantile",
+                                   "quantile_value_mg_L",
+                                   "min_value_mg_L",
                                    "max_value_mg_L",
                                    "mean_value_mg_L",
                                    #"sd_value_mg_L",
