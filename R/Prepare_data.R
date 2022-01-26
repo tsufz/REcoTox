@@ -36,6 +36,7 @@ prepare_data <- function(project, effects = c("MOR","GRO","DEV"),
   message("[EcoToxR]:  Merging tests, results and chemicals.")
   object$tests_results <- data.table(left_join(object$tests_habitat,object$results, by = "test_id"))
   object$tests_results$cas_number <- suppressWarnings(as.integer(object$tests_results$cas_number))
+  object$tests_results$endpoint <- suppressWarnings(as.character(object$tests_results$endpoint))
   object$chemicals$cas_number <- suppressWarnings(as.integer(object$chemicals$cas_number))
   object$tests_results_chemicals <- data.table(left_join(object$tests_results, object$chemicals, by = "cas_number"))
   object$test_results_all <- data.table(left_join(object$tests_results_chemicals, object$species, by = "species_number"))
