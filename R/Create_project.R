@@ -21,22 +21,22 @@ create_project <- function(database_path, project_path, initalise_database_proje
     message("[EcoToxR]:  Read the Ecotox Knowledgebase ASCII files.")
     suppressWarnings({
       message("[EcoToxR]:  Read tests")
-      object$tests <- fread(project$files[grep("tests.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = "")
+      object$tests <- tidyverse::tibble(fread(project$files[grep("tests.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = ""))
 
       message("[EcoToxR]:  Read chemicals.")
-      object$chemicals <- fread(project$files[grep("chemicals.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC"), dec = ".", stringsAsFactors = FALSE, quote = "")
+      object$chemicals <- tidyverse::tibble(fread(project$files[grep("chemicals.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC"), dec = ".", stringsAsFactors = FALSE, quote = ""))
 
-      object$chemprop <- create_chemical_properties(project$database_path)
+      object$chemprop <- tidyverse::tibble(create_chemical_properties(project$database_path))
 
       message("[EcoToxR]:  Read species.")
-      object$species <- fread(project$files[grep("species.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = "")
+      object$species <- tidyverse::tibble(fread(project$files[grep("species.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = ""))
 
       message("[EcoToxR]:  Read results.")
       #object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
-      object$results <- data.table(read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\""))
+      object$results <- tidyverse::tibble(read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\""))
 
       message("[EcoToxR]:  Read references.")
-      object$references <- fread(project$files[grep("references.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = "")
+      object$references <- tidyverse::tibble(fread(project$files[grep("references.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = ""))
     })
 
     #  Trim lists
@@ -73,7 +73,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
       load_default = TRUE
     }
     if (exists("project") & load_default == FALSE) {
-      project$object$chemprop <- create_chemical_properties(project$database_path)
+      project$object$chemprop <- tidyverse::tibble(create_chemical_properties(project$database_path))
       project$project_path <- suppressWarnings(normalizePath(project_path))
     }
   }
