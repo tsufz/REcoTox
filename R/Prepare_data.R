@@ -1,16 +1,17 @@
-prepare_data <- function(project, effects = c("MOR","GRO","DEV"),
+prepare_data <- function(project,
+                         effects = c("MOR","GRO","DEV"),
                          habitat = c("Non-Soil","Water","Soil"),
-                         remove_formulation = TRUE,
+                         remove_formulation = FALSE,
                          save_project = TRUE,
                          new_project_path = NA,
                          load_initial_project = FALSE) {
 
   if (load_initial_project == TRUE) {
-    initial_project <- normalizePath(file.path(project_path,"initial_project.RData"))
+    initial_project <- normalizePath(file.path(project_path, "initial_project.RData"))
     if (file.exists(initial_project)) {
       message("[EcoToxR]:  Loading the initial project.")
       .tempenv <- new.env()
-      load(file = initial_project,envir = .tempenv)
+      load(file = initial_project, envir = .tempenv)
       if (!is.na(new_project_path)) {
         .tempenv$project$project_path <- normalizePath(project_path)
       }
@@ -30,17 +31,17 @@ prepare_data <- function(project, effects = c("MOR","GRO","DEV"),
 
   # select only water organisms and merge tables
   message("[EcoToxR]:  Subsetting to habitat.")
-  object$tests_habitat <- object$tests[organism_habitat %in% habitat]
+  object$tests_habitat <- object$tests %>% filter(organism_habitat %in% habitat)
 
   # Merge the raw tables
   message("[EcoToxR]:  Merging tests, results and chemicals.")
-  object$tests_results <- data.table(left_join(object$tests_habitat,object$results, by = "test_id"))
-  object$tests_results$cas_number <- suppressWarnings(as.integer(object$tests_results$cas_number))
-  object$tests_results$endpoint <- suppressWarnings(as.character(object$tests_results$endpoint))
-  object$chemicals$cas_number <- suppressWarnings(as.integer(object$chemicals$cas_number))
-  object$tests_results_chemicals <- data.table(left_join(object$tests_results, object$chemicals, by = "cas_number"))
-  object$test_results_all <- data.table(left_join(object$tests_results_chemicals, object$species, by = "species_number"))
-  object$test_results_all <- data.table(left_join(object$test_results_all, object$references, by = "reference_number"))
+  object$tests_results <- object$tests_habitat %>% left_join(object$results, by = "test_id")
+  object$tests_results <- object$tests_results %>% mutate(cas_number = as.integer(cas_number), endpoint = as.character(endpoint))
+  object$chemicals <- suppressWarnings(object$chemicals %>% mutate(cas_number = as.integer(cas_number)))
+
+  object$tests_results_chemicals <- tibble(object$tests_results %>% left_join(object$chemicals, by = "cas_number"))
+  object$test_results_all <- object$tests_results_chemicals %>% left_join(object$species, by = "species_number")
+  object$test_results_all <- object$test_results_all %>% left_join(object$references, by = "reference_number")
 
   # delete intermediate tables
   object$tests <- NULL
@@ -54,17 +55,20 @@ prepare_data <- function(project, effects = c("MOR","GRO","DEV"),
 
   # clean up data
   message("[EcoToxR]:  Cleaning up effects, endpoints and measurements of asterics. tilde and slash artefacts.")
-  object$test_results_all$endpoint <- as.character(gsub("[*].*$", "", object$test_results_all$endpoint))
-  object$test_results_all$endpoint <-  as.character(gsub("[/].*$", "", object$test_results_all$endpoint))
-  object$test_results_all$measurement <- as.character(gsub("[*].*$", "", object$test_results_all$measurement))
-  object$test_results_all$measurement <-  as.character(gsub("[/].*$", "", object$test_results_all$measurement))
-  object$test_results_all$effect <- as.character(gsub("[~].*$", "", object$test_results_all$effect))
-  object$test_results_all$effect <- as.character(gsub("[/].*$", "", object$test_results_all$effect))
+
+  object$test_results_all <- object$test_results_all %>% mutate(endpoint = as.character(gsub("[*].*$", "", endpoint)))
+  object$test_results_all <- object$test_results_all %>% mutate(endpoint = as.character(gsub("[/].*$", "", endpoint)))
+  object$test_results_all <- object$test_results_all %>% mutate(measurement = as.character(gsub("[*].*$", "", measurement)))
+  object$test_results_all <- object$test_results_all %>% mutate(measurement = as.character(gsub("[/].*$", "", measurement)))
+  object$test_results_all <- object$test_results_all %>% mutate(effect = as.character(gsub("[*].*$", "", effect)))
+  object$test_results_all <- object$test_results_all %>% mutate(effect = as.character(gsub("[/].*$", "", effect)))
 
   # Select data by effects
   message(paste0("[EcoToxR]:  Shrinking to effects: ", paste(effects, collapse = ", "), "."))
   object$parameters$effects <- effects
-  object$all_selected_effects <- object$test_results_all[effect %in% effects]
+
+  object$all_selected_effects <- object$test_results_all %>% filter(effect %in% effects)
+
   message("[EcoToxR]:  The following effects are included:")
   print(unique(object$all_selected_effects$effect))
   object$test_results_all <- NULL
@@ -79,12 +83,12 @@ prepare_data <- function(project, effects = c("MOR","GRO","DEV"),
 
   message("[EcoToxR]:  Reducing to mass/water related units.")
   unit_pattern <- "(^(|(A|a)(e|i|E|I) )(|m|n|u|p)(g|mol)/(|m|u|p|d|)(L|l|m3)$)|(^(p)(p)(m|t|b)$)"
-  object$all_selected_effects <- object$all_selected_effects[conc1_unit %like% unit_pattern]
+  object$all_selected_effects <- object$all_selected_effects %>% filter(conc1_unit %like% unit_pattern)
 
   message("[EcoToxR]:  The following units have been found in the data:")
   print(unique(object$all_selected_effects$conc1_unit))
 
-  object$all_selected_effects <- na.omit(object$all_selected_effects, cols = "endpoint")
+  object$all_selected_effects <-  object$all_selected_effects %>% drop_na(endpoint)
 
   object$all_selected_effects <- data.table(reduce(list(
   object$chemicals[, colnames(object$chemicals) %in% c("cas_number", "chemical_name", "dtxsid"), with = FALSE],
@@ -95,7 +99,11 @@ prepare_data <- function(project, effects = c("MOR","GRO","DEV"),
 
   colnames(object$all_selected_effects)[2] <- "chemical_name"
 
+  object$tests_habitat <- NULL
+  object$tests_results <- NULL
+  object$test_results_all <- NULL
   project$object <- object
+
   if (save_project == TRUE) {
     message("[EcoToxR]:  Saving the initial project to the project folder.")
     file_name <- suppressWarnings(normalizePath(file.path(project$project_path, "initial_project.RData")))
