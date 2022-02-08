@@ -53,14 +53,14 @@ build_final_list <- function(object = object){
 
 calculate_hours <- function(object = object){
   message("[EcoToxR]:  Recalculating duration data (day to hours).")
-  results <- data.table(object$results)
+  results <- tibble(object$results)
 
   results_h <- results %>% filter(obs_duration_unit == "h")
   results_d <- results %>% filter(obs_duration_unit == "d")
 
   results_d <- results_d %>% filter(obs_duration_unit == "d") %>% mutate(obs_duration_mean = 24 * obs_duration_mean) %>% mutate(obs_duration_unit = "h")
 
-  results <- data.table(rbind(results_h, results_d))
+  results <- tibble(rbind(results_h, results_d))
 
   object$results <- results
 
@@ -70,16 +70,16 @@ calculate_hours <- function(object = object){
 
 
 calculate_water_solubility <- function(object = object){
-  results <- data.table(object$results)
+  results <- tibble(object$results)
 
   # OPERA
-  results <- results %>% mutate(OPERA_S_mg_L = 10^OPERA_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # OPERA output g/L
+  results <- results %>% rowwise() %>% mutate(OPERA_S_mg_L = 10^OPERA_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # OPERA output g/L
 
   # ACD
-  results <- results %>% mutate(ACD_S_mg_L = 10^ACD_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # ACD output g/L
+  results <- results %>% rowwise() %>% mutate(ACD_S_mg_L = 10^ACD_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # ACD output g/L
 
   # JC
-  results <- results %>% mutate(JC_S_mg_L = 10^JC_LOG_S_74 * AVERAGE_MASS*1000) %>% filter(is.na(EXCLUDE)) # JC output g/L
+  results <- results %>% rowwise() %>% mutate(JC_S_mg_L = 10^JC_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # JC output g/L
 
   # Domain estimate solubility domain (based on ideas in ChemProp)
   # Case 1: if EC <= Sw -> 3
@@ -138,13 +138,13 @@ calculate_water_solubility <- function(object = object){
 }
 
 
-export_chemical_list <- function(object,project_path){
+export_chemical_list <- function(object, project_path){
   message("[EcoToxR]:  Exporting the list of included chemicals to the project folder.")
   message("[EcoToxR]:  Check the file for exclusion of chemicals.")
   message("[EcoToxR]:  Impute missing values for physical-chemical properties.")
-  message(paste0("[EcoToxR]:  Edit the file ",tolower(object$parameters$ecotoxgroup),"_chemical_list.csv and re-run the workflow."))
-  chemical_list <- data.table(unique(object$mortality_filtered[,c("cas_number", "cas", "chemical_name")]))
-  chemical_list <- left_join(chemical_list,object$chemprop[,c("cas_number", "FOUND_BY", "DTXSID", "PREFERRED_NAME",
+  message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_chemical_list.csv and re-run the workflow."))
+  chemical_list <- data.table(unique(object$mortality_filtered[, c("cas_number", "cas", "chemical_name")]))
+  chemical_list <- left_join(chemical_list,object$chemprop[, c("cas_number", "FOUND_BY", "DTXSID", "PREFERRED_NAME",
                                                                "CASRN", "INCHIKEY", "IUPAC_NAME", "SMILES", "INCHI_STRING",
                                                                "MOLECULAR_FORMULA", "AVERAGE_MASS", "MONOISOTOPIC_MASS",
                                                                "MS_READY_SMILES", "QSAR_READY_SMILES", "OPERA_LOG_P", "OPERA_LOG_P_AD",
@@ -159,15 +159,15 @@ export_chemical_list <- function(object,project_path){
 
 }
 
-export_exclude_list <- function(object,project_path){
+export_exclude_list <- function(object, project_path){
   message("[EcoToxR]:  Exporting the final list to the project folder.")
   message("[EcoToxR]:  Check the file for exclusion of records.")
-  message(paste0("[EcoToxR]:  Edit the file ",tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv and re-run the workflow."))
+  message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv and re-run the workflow."))
   exclude <- data.table(matrix(nrow = nrow(object$mortality_filtered), ncol = 2))
   colnames(exclude) <- c("exclude", "exclusion_comment")
   exclude_list <- data.table(exclude,object$mortality_filtered)
   object$mortality_filtered_exclude_list <- data.table(exclude_list[, c("exclude", "exclusion_comment", "result_id", "cas_number", "cas", "chemical_name",
-                                                                       colnames(exclude_list)[grep(pattern = "conc1",colnames(exclude_list))],
+                                                                       colnames(exclude_list)[grep(pattern = "conc1", colnames(exclude_list))],
                                                                        "species_number", "concentration_mean", "concentration_unit",
                                                                        "latin_name", "author", "title", "source", "publication_year"),
                                                                     with = FALSE])
@@ -179,27 +179,31 @@ export_exclude_list <- function(object,project_path){
 
 remove_excluded_chemicals <- function(object, project_path){
 
-  chemical_list <- data.table(fread(file.path(project_path,paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")),
+  chemical_list <- data.table(fread(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")),
                                     sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN)))
 
   suppressWarnings(chemical_list <- format_chemical_properties(chemical_list))
   object$chemical_list <- chemical_list
 
 
-  if(!all(unique(chemical_list$exclude) == 1, na.rm = TRUE)){
+  if(!all(unique(chemical_list$exclude) == 1, na.rm = TRUE)) {
     stop("Only NA or 1 is allowed in the exclusion filter. Check the exclusion list and re-run the workflow.")
   }
-  inclusion_list <- chemical_list[, chemical_list[is.na(EXCLUDE)]]$cas_number
-  exclusion_list <- chemical_list[chemical_list[, EXCLUDE %like% 1]]$cas_number
+  #inclusion_list <- as.integer(chemical_list[, chemical_list[is.na(EXCLUDE)]]$cas_number)
+  inclusion_list <- chemical_list %>% filter(is.na(EXCLUDE)) %>% pull(cas_number)
 
-  object$mortality_removed_chemicals <- object$mortality_filtered[cas_number %in% exclusion_list]
-  object$mortality_filtered <- object$mortality_filtered[cas_number %in% inclusion_list]
+  # exclusion_list <- chemical_list[chemical_list[, EXCLUDE %like% 1]]$cas_number
+
+  exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
+
+  object$mortality_removed_chemicals <- object$mortality_filtered %>% filter(cas_number %in% exclusion_list)
+  object$mortality_filtered <- object$mortality_filtered %>% filter(cas_number %in% inclusion_list)
 
   fwrite(object$mortality_filtered,file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")),
                           sep = ",", dec = ".")
 
   if(length(exclusion_list) > 0){
-    fwrite(object$mortality_filtered, suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))), sep = ",", dec = ".")
+    fwrite(object$mortality_filtered, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))), sep = ",", dec = ".")
   }
   return(object)
 }
@@ -213,7 +217,7 @@ update_chemical_list <- function(object = object, project_path = project_path, d
   chemprop <- data.table(object$chemprop)
   chemical_list <- data.table(object$chemical_list)
   chemical_list <- format_chemical_properties(chemical_list)
-  chemprop <- data.table(merge(chemprop, chemical_list, by='cas_number', all = TRUE, suffixes = c("", ".update")))
+  chemprop <- data.table(merge(chemprop, chemical_list, by = 'cas_number', all = TRUE, suffixes = c("", ".update")))
   col_names1 <- grep(".update", colnames(chemprop))
   col_names2 <- colnames(chemprop)[grep(".update", colnames(chemprop))]
   col_names3 <- gsub(".update", replacement = "", col_names2)
@@ -245,30 +249,20 @@ object$chemprop <- chemprop
 return(object)
 }
 
-remove_asterics <- function(object){
+tidy_conc_values <- function(object){
   # message("Remove effect reportings which have asterics")
   # Remove all wired effect reportings
   ## Replace by an export mechanism
-  nrow(object)
+  object <- object %>% mutate(conc1_mean = gsub("\\*", "", conc1_mean),
+                              conc1_min = gsub("\\*", "", conc1_min),
+                              conc1_max = gsub("\\*", "", conc1_max))
 
-  suppressWarnings(
-    {
-      object$conc1_mean <- as.numeric(object[, conc1_mean])
-      object$conc1_min <- as.numeric(object[, conc1_min])
-      object$conc1_max <- as.numeric(object[, conc1_max])
-    }
+
+  object <- suppressWarnings(object %>% mutate(conc1_mean = as.numeric(conc1_mean),
+                              conc1_min = as.numeric(conc1_min),
+                              conc1_max = as.numeric(conc1_max),
+                              publication_year = as.integer(publication_year))
   )
-
-  conc_remove <- c("[*]")
-  object <- object[!conc1_mean %like% conc_remove]
-  object <- object[!conc1_min %like% conc_remove]
-  object <- object[!conc1_max %like% conc_remove]
-  #object <- object[!conc1_min_op %like% conc_remove]
-  #object <- object[!conc1_max_op %like% conc_remove]
-  #object$conc_remove <- c("~", ">=")
-  #object$all_selected_effects <- object$all_selected_effects[!conc1_mean_op %in% object$conc_remove]
-
-  object <- filter(object, !is.na(conc1_mean))
 
   return(object)
 }
@@ -347,24 +341,24 @@ format_chemical_properties <- function(object){
 }
 
 
-export_mol_units <- function(object, project_path = project$project_path){
+export_mol_units <- function(object, project_path = project$project_path) {
 
   ecotoxgroup <- object$parameters$ecotoxgroup
   file_name <- suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(ecotoxgroup), "_mol_weight.csv"))))
 
   message("[EcoToxR]:  Exporting the list of chemicals for mol/L to mg/L conversion to the project folder.")
-  message(paste0("[EcoToxR]:  Edit the file ",tolower(ecotoxgroup),"_mol_weight.csv and re-run the workflow."))
+  message(paste0("[EcoToxR]:  Edit the file ", tolower(ecotoxgroup), "_mol_weight.csv and re-run the workflow."))
   message("[EcoToxR]:  Add only missing data to column 'AVERAGE_MASS'.")
 
-  chemprop <- unique(object$mortality_filtered[, c("cas_number", "cas", "chemical_name"), with = FALSE][which(object$mortality_filtered[, concentration_unit %like% "mol/L"])])
-  chemprop$cas_number <- as.numeric(chemprop$cas_number)
-  chemprop$cas <- as.character(chemprop$cas)
-  chemprop$chemical_name <- as.character(chemprop$chemical_name)
-  chemprop$AVERAGE_MASS <- NA
+  chemprop <- object$mortality_filtered %>%
+      filter(conc1_unit %like% "mol/L") %>%
+      select(cas_number, cas, chemical_name) %>%
+      add_column("AVERAGE_MASS" = NA)
 
-  if(nrow(object$chemprop)>0){
-    suppressWarnings(chemprop <- left_join(chemprop, object$chemprop[, c(1, 4:21)], by = "cas_number"))
-  }
+  if(nrow(object$chemprop) > 0) {
+
+      chemprop <- chemprop %>% left_join(object$chemprop %>% select(1, 4:21), by = "cas_number")
+      }
 
   chemprop$AVERAGE_MASS.x <- NULL
 
@@ -378,78 +372,76 @@ export_mol_units <- function(object, project_path = project$project_path){
   return(object)
 }
 
-update_mol_units <- function(object, database_path = project$database_path, project_path = project$project_path){
+update_mol_units <- function(object, database_path = project$database_path, project_path = project$project_path) {
   message("[EcoToxR]:  Recalulating record unit mol/L to mg/L.")
   ecotoxgroup <- object$parameters$ecotoxgroup
   file_name <- file.path(project_path, paste0(tolower(ecotoxgroup), "_mol_weight.csv"))
 
 
 
-  chemprop <- data.table(fread(file_name, sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN)))
-  chemprop <- format_chemical_properties(chemprop)
+  chemprop <- tibble(fread(file_name, sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN)))
+  # chemprop <- format_chemical_properties(chemprop)
 
   # subset
-  nonmol_records <- object$mortality_filtered[!concentration_unit %like% "mol/L"]
-  mol_records <- object$mortality_filtered[concentration_unit %like% "mol/L"]
 
-  for(i in 1:nrow(mol_records)){
-    cas_id <- chemprop[, which(cas_number %like% mol_records[i, cas_number])]
+  mol_records <- object$mortality_filtered %>%
+      filter(concentration_unit %like% "mol/L") %>%
+      left_join(chemprop %>% select(cas_number, AVERAGE_MASS), by = "cas_number") %>%
+      rowwise() %>%
+      mutate(concentration_mean = concentration_mean * 1000 * AVERAGE_MASS) %>%
+      mutate(concentration_unit = "mg/L") %>%
+      select(-AVERAGE_MASS)
 
-    mol_records[i, "concentration_mean"] <- mol_records[i, concentration_mean] * 1000 * chemprop[cas_id, AVERAGE_MASS]
-    }
-
-  object$mortality_filtered <- data.table(rbind(nonmol_records, mol_records))[order(cas_number)]
-
-
-  object$mortality_filtered$concentration_unit[which(object$mortality_filtered[, concentration_unit %like% "mol/L"])] <- "mg/L"
+  object$mortality_filtered <- rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records)
 
   message("[EcoToxR]: The following units are ")
   print(unique(object$mortality_filtered$concentration_unit))
 
   #message("[EcoToxR]: Update the chemical properties.")
 
-  object$chemprop <- object$chemprop[chemprop, on = c("cas_number"), AVERAGE_MASS := i.AVERAGE_MASS]
+  object$chemprop <- object$chemprop[data.table(chemprop), on = c("cas_number"), AVERAGE_MASS := i.AVERAGE_MASS]
 
   object$chemprop <- object$chemprop %>% mutate_all(na_if, "")
 
   #fwrite(object$chemprop,file.path(database_path,"chemical_properties.csv"), sep = ",", dec = ".", quote = "\"", na = NA)
-  fwrite(object$chemprop,suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = c(NA, NaN, ""))
+  fwrite(object$chemprop, suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = c(NA, NaN, ""))
 
   return(object)
 }
 
-convert_units <- function(object, sample_size = NA){
+convert_units <- function(object, sample_size = NA) {
 
-  object <- data.table(object)
-
-  if(!is.na(sample_size)){
-    object <- object[sample(.N, sample_size)]
+  if(!is.na(sample_size)) {
+    object <- object %>% sample_n(size = sample_size)
   }
 
-  #message("Add new columns for concentrations")
+  message("[EcoToxR]:  Impute missing concentration mean by averaging minimum and maximum values")
 
-  object$concentration_mean <- NA
-  object$concentration_unit <- NA
+  object <- object %>% mutate(concentration_mean = conc1_mean, concentration_unit = conc1_unit)
 
-  object$concentration_mean <- object$conc1_mean
-  object$concentration_unit <- object$conc1_unit
+  object <- rbind(object %>% filter(!is.na(concentration_mean)),
+                  object %>% filter(is.na(concentration_mean)) %>%
+                      rowwise() %>%
+                      mutate(concentration_mean = ifelse(is.na(concentration_mean), mean(c(conc1_min, conc1_max)), concentration_mean))
+  )
 
-  # update concentration units if NA
-
-
-  length_progressbar <- length(object$concentration_mean[is.na(object$concentration_mean)])
-  if(length_progressbar > 0){
-    pb <- progress::progress_bar$new(
-      format = "[EcoToxR]:  Update missing concentration mean with mean from min and max [:bar] :percent ETA: :eta",
-      total = length_progressbar, clear = FALSE, width = 80)
-
-    for(i in 1:length(object$concentration_mean[is.na(object$concentration_mean)])){
-      object[which(object[, is.na(concentration_unit)])][i]$concentration_mean <-
-        mean(object[which(object[, is.na(concentration_unit)])][i]$conc1_min,object[which(object[, is.na(concentration_unit)])][i]$conc1_max)
-      pb$tick()
-
-    }
-  }
+#
+#
+#
+#
+#   length_progressbar <- length(object$concentration_mean[is.na(object$concentration_mean)])
+#   if(length_progressbar > 0){
+#     pb <- progress::progress_bar$new(
+#       format = "[EcoToxR]:  Update missing concentration mean with mean from min and max (:spin) [:bar] :percent ETA: :eta",
+#       total = length_progressbar, clear = FALSE, width = 80)
+#
+#     for(i in 1:length(object$concentration_mean[is.na(object$concentration_mean)])) {
+#       pb$tick()
+#       object[which(object[, is.na(concentration_unit)])][i]$concentration_mean <-
+#         mean(object[which(object[, is.na(concentration_unit)])][i]$conc1_min, object[which(object[, is.na(concentration_unit)])][i]$conc1_max)
+#
+#
+#
 
   # convert similar unit to SI conform units (e.g. ppm to mg/L)
 
@@ -458,206 +450,111 @@ convert_units <- function(object, sample_size = NA){
   message("[EcoToxR]:  The following units will be converted:")
   print(unique(object$concentration_unit))
 
+  # this assumes that only some records are reported in log(LC50)
+  log <- "^.log.[A-Z]*[0-9]*?$"
+
+  if (nrow(object %>% filter(endpoint %like% log)) > 0) {endpoint
+
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(endpoint %like% log, 10^concentration_mean, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(endpoint = ifelse(concentration_unit %like% log, "LC50", endpoint))
+
+  }
+
   # pg/L
   pg <- "^pg/(l|L)$"
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% pg])])
-  if(length_progressbar > 0){
-    message("[EcoToxR]:  Converting pg/L like unit conversion")
-    object[concentration_unit %like% pg, concentration_mean := concentration_mean / 1e+09]
 
-    # pb <- progress::progress_bar$new(
-    #   format = "[EcoToxR]:  Converting pg/L like units [:bar] :percent ETA: :eta",
-    #   total = length_progressbar, clear = FALSE, width = 80)
-    #
-    # for(i in 1:nrow(object[which(object[, concentration_unit %like% pg])])){
-    #   object[which(object[, concentration_unit %like% pg])][i]$concentration_mean <-
-    #     object[which(object[, concentration_unit %like% pg])][i]$concentration_mean / 1e+09
-    #   pb$tick()
+  if (nrow(object %>% filter(concentration_unit %like% pg)) > 0) {
 
-    #}
+      message("[EcoToxR]:  Converting pg/L like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% pg, concentration_mean / 1e+09, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% pg, "mg/L", concentration_unit))
 
-    object$concentration_unit[which(object[, concentration_unit %like% pg])] <- "mg/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping pg/L like unit conversion")}
+  } else {message("[EcoToxR]:  Skipping pg/L like units")}
 
 
   #ng
   ng <- "^(|A(I|E|i|e) )ng/(l|L|dm3)$|^ppt$|^(|A(I|E|i|e) )pg/(ml|mL)$"
 
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% ng])])
-  if(length_progressbar > 0){
-    message("[EcoToxR]:  Converting ng/L like unit conversion")
-    object[concentration_unit %like% ng, concentration_mean := concentration_mean / 1e+06]
+  if (nrow(object %>% filter(concentration_unit %like% ng)) > 0) {
 
-    # pb <- progress::progress_bar$new(
-    #   format = "[EcoToxR]:  Converting ng/L like units [:bar] :percent ETA: :eta",
-    #   total = length_progressbar, clear = FALSE, width = 80)
-    #
-    # for(i in 1:nrow(object[which(object[, concentration_unit %like% ng])])){
-    #   object[which(object[, concentration_unit %like% ng])][i]$concentration_mean <-
-    #     object[which(object[, concentration_unit %like% ng])][i]$concentration_mean / 1e+06
-    #   pb$tick()
+      message("[EcoToxR]:  Converting ng/L like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% ng, concentration_mean / 1e+06, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% ng, "mg/L", concentration_unit))
 
-
-
-    object$concentration_unit[which(object[, concentration_unit %like% ng])] <- "mg/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping ng/L like unit conversion")}
-
+  } else {message("[EcoToxR]:  Skipping ng/L like units")}
 
   #µg related
   ug <- "(^(|(A|a)(I|E|i|e) )ug/(l|L|dm3)$)|^ppb$|(^pg/u(l|L)$)|(^(|(A|a)(I|E|i|e) )ng/m(l|L)$)|^pg/u(l|L)"
 
+  if (nrow(object %>% filter(concentration_unit %like% ug)) > 0) {
 
+      message("[EcoToxR]:  Converting ug/L like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% ug, concentration_mean / 1e+03, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% ug, "mg/L", concentration_unit))
 
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% ug])])
+  } else {message("[EcoToxR]:  Skipping ug/L like units")}
 
-  if(length_progressbar > 0){
-    message("[EcoToxR]:  Converting ug/L like unit conversion")
-    object[concentration_unit %like% ug, concentration_mean := concentration_mean / 1e+03]
-
-
-  # if(length_progressbar > 0){
-  #   pb <- progress::progress_bar$new(
-  #     format = "[EcoToxR]:  Converting ug/L like units [:bar] :percent ETA: :eta",
-  #     total = length_progressbar, clear = FALSE, width = 80)
-  #
-  #   for(i in 1:nrow(object[which(object[, concentration_unit %like% ug])])){
-  #     object[which(object[, concentration_unit %like% ug])][i]$concentration_mean <-
-  #       object[which(object[, concentration_unit %like% ug])][i]$concentration_mean / 1e+03
-  #     pb$tick()
-  #
-  #   }
-
-    object$concentration_unit[which(object[, concentration_unit %like% ug])] <- "mg/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping ug/L like units conversion")}
 
   # g/L
   g <- "(^(|(A|a)(e|i|E|I) )(g/(l|L)$))|(^mg/(ml|mL)$|(^g/dm3$))"
 
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% g])])
-  if(length_progressbar > 0){
-    message("[EcoToxR]:  Converting g/L like unit conversion")
-    object[concentration_unit %like% g, concentration_mean := concentration_mean * 1e+03]
+  if (nrow(object %>% filter(concentration_unit %like% g)) > 0) {
 
-    # pb <- progress::progress_bar$new(
-    #   format = "[EcoToxR]:  Converting g/L like units [:bar] :percent ETA: :eta",
-    #   total = length_progressbar, clear = FALSE, width = 80)
-    #
-    # for(i in 1:nrow(object[which(object[, concentration_unit %like% g])])){
-    #   object[which(object[, concentration_unit %like% g])][i]$concentration_mean <-
-    #     object[which(object[, concentration_unit %like% g])][i]$concentration_mean*1e+03
-    #   pb$tick()
+      message("[EcoToxR]:  Converting g/L like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% g, concentration_mean * 1e+03, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% g, "mg/L", concentration_unit))
+
+  } else {message("[EcoToxR]:  Skipping g/L like units")}
 
 
-
-    object$concentration_unit[which(object[, concentration_unit %like% g])] <- "mg/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping g/L like units conversion")}
-
-
-
+  # mg/L
   message("[EcoToxR]:  Converting mg/L like units")
   mg <- "(^(|((A|a)(I|E|i|e)) )mg/(l|L|dm3)$)|^ppm$|(^(|((A|a)(I|E|i|e)) )ug/m(l|L|m3)$)|^g/m3$"
-  object$concentration_unit[which(object[, concentration_unit %like% mg])] <- "mg/L"
-
-
-
+  object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% mg, "mg/L", concentration_unit))
 
   #pmol related
   pmol <- "(^(|(A|a)(I|E|i|e) )pmol/(l|L)$)"
 
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% pmol])])
-  if(length_progressbar > 0){
-    # pb <- progress::progress_bar$new(
-    #   format = "[EcoToxR]:  Converting pmol/L like units [:bar] :percent ETA: :eta",
-    #   total = length_progressbar, clear = FALSE, width = 80)
-    #
-    # for(i in 1:nrow(object[which(object[, concentration_unit %like% pmol])])){
-    #   object[which(object[, concentration_unit %like% pmol])][i]$concentration_mean <-
-    #     object[which(object[, concentration_unit %like% pmol])][i]$concentration_mean / 1e+12
-    #   pb$tick()
-    #
-    # }
+  if (nrow(object %>% filter(concentration_unit %like% pmol)) > 0) {
 
-    message("[EcoToxR]:  Converting pmol like unit conversion")
-    object[concentration_unit %like% pmol, concentration_mean := concentration_mean / 1e+12]
+      message("[EcoToxR]:  Converting pmol like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% pmol, concentration_mean / 1e+12, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% pmol, "mol/L", concentration_unit))
 
-    object$concentration_unit[which(object[, concentration_unit %like% pmol])] <- "mol/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping pmol/L like unit conversion")}
-
-
+  } else {message("[EcoToxR]:  Skipping pmol/L like units")}
 
   #nmol related
   nmol <- "(^(|(A|a)(I|E|i|e) )nmol/(l|L)$)"
 
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% nmol])])
-  if(length_progressbar > 0){
-    # pb <- progress::progress_bar$new(
-    #   format = "[EcoToxR]:  Converting nmol/L like units [:bar] :percent ETA: :eta",
-    #   total = length_progressbar, clear = FALSE, width = 80)
-    #
-    # for(i in 1:nrow(object[which(object[, concentration_unit %like% nmol])])){
-    #   object[which(object[, concentration_unit %like% nmol])][i]$concentration_mean <-
-    #     object[which(object[, concentration_unit %like% nmol])][i]$concentration_mean / 1e+09
-    #   pb$tick()
-    #
-    # }
+  if (nrow(object %>% filter(concentration_unit %like% nmol)) > 0) {
 
-    message("[EcoToxR]:  Converting nmol like unit conversion")
-    object[concentration_unit %like% nmol, concentration_mean := concentration_mean / 1e+09]
+      message("[EcoToxR]:  Converting nmol like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% nmol, concentration_mean / 1e+09, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% nmol, "mol/L", concentration_unit))
 
-    object$concentration_unit[which(object[, concentration_unit %like% nmol])] <- "mol/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping nmol/L coversion")}
+  } else {message("[EcoToxR]:  Skipping nmol/L like units")}
 
   #umol related
   umol <- "(^(|(A|a)(I|E|i|e) )umol/(dm3|l|L)$)|^nmol/ml$|^mmol/m3$"
 
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% umol])])
-  if(length_progressbar > 0){
-    # pb <- progress::progress_bar$new(
-    #   format = "[EcoToxR]:  Coverting umol/L like units [:bar] :percent ETA: :eta",
-    #   total = length_progressbar, clear = FALSE, width = 80)
-    #
-    # for(i in 1:nrow(object[which(object[,concentration_unit %like% umol])])){
-    #   object[which(object[, concentration_unit %like% umol])][i]$concentration_mean <-
-    #     object[which(object[, concentration_unit %like% umol])][i]$concentration_mean / 1e+06
-    #   pb$tick()
-    #
-    # }
+  if (nrow(object %>% filter(concentration_unit %like% umol)) > 0) {
 
-    message("[EcoToxR]:  Converting umol like unit conversion")
-    object[concentration_unit %like% umol, concentration_mean := concentration_mean / 1e+06]
+      message("[EcoToxR]:  Converting pmol like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% umol, concentration_mean / 1e+06, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% umol, "mol/L", concentration_unit))
 
-    object$concentration_unit[which(object[, concentration_unit %like% umol])] <- "mol/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping umol/L like unit conversion")}
+  } else {message("[EcoToxR]:  Skipping umol/L like units")}
 
   #mmol related
   mmol <- "^(|(A|a)(I|E|i|e) )mmol/(dm3|l|L)$"
 
-  length_progressbar <- nrow(object[which(object[, concentration_unit %like% mmol])])
-  if(length_progressbar > 0){
-    # pb <- progress::progress_bar$new(
-    #   format = "[EcoToxR]:  Converting mmol/L like units [:bar] :percent ETA: :eta",
-    #   total = length_progressbar, clear = FALSE, width = 80)
-    #
-    # for(i in 1:nrow(object[which(object[, concentration_unit %like% mmol])])){
-    #   object[which(object[, concentration_unit %like% mmol])][i]$concentration_mean <-
-    #     object[which(object[, concentration_unit %like% mmol])][i]$concentration_mean / 1e+03
-    #   pb$tick()
-    #
-    # }
+  if (nrow(object %>% filter(concentration_unit %like% mmol)) > 0) {
 
-    message("[EcoToxR]:  Converting mmol like unit conversion")
-    object[concentration_unit %like% mmol, concentration_mean := concentration_mean / 1e+03]
+      message("[EcoToxR]:  Converting mmol like units")
+      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% mmol, concentration_mean / 1e+03, concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% mmol, "mol/L", concentration_unit))
 
-    object$concentration_unit[which(object[, concentration_unit %like% mmol])] <- "mol/L"
-    #pb$terminate()
-  } else {message("[EcoToxR]:  Skipping mmol/L like unit conversion")}
+  } else {message("[EcoToxR]:  Skipping mmol/L like units")}
 
   message("[EcoToxR]:  The following units are left in the data:")
   print(unique(object$concentration_unit))
