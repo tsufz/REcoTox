@@ -46,7 +46,7 @@ build_final_list <- function(object = object){
 
   results <- results[,..select_columns]
 
-  object$results <- data.table(results)
+  object$results <- tibble(results)
   return(object)
 }
 
@@ -70,7 +70,7 @@ calculate_hours <- function(object = object){
 
 
 calculate_water_solubility <- function(object = object){
-  results <- tibble(object$results)
+  results <- object$results
 
   # OPERA
   results <- results %>% rowwise() %>% mutate(OPERA_S_mg_L = 10^OPERA_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # OPERA output g/L
@@ -80,6 +80,8 @@ calculate_water_solubility <- function(object = object){
 
   # JC
   results <- results %>% rowwise() %>% mutate(JC_S_mg_L = 10^JC_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # JC output g/L
+
+  results <- data.table::data.table(results)
 
   # Domain estimate solubility domain (based on ideas in ChemProp)
   # Case 1: if EC <= Sw -> 3
@@ -133,7 +135,7 @@ calculate_water_solubility <- function(object = object){
 
   }
   #pb$terminate()
-  object$results <- data.table(results)
+  object$results <- tibble(results)
   return(object)
 }
 
@@ -179,14 +181,15 @@ export_exclude_list <- function(object, project_path){
 
 remove_excluded_chemicals <- function(object, project_path){
 
-  chemical_list <- data.table(fread(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")),
-                                    sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN)))
+  chemical_list <- read_csv(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")),
+                            na = c("NA", "", NA, NaN))
+  #fread(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")), sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN))
 
   suppressWarnings(chemical_list <- format_chemical_properties(chemical_list))
   object$chemical_list <- chemical_list
 
 
-  if(!all(unique(chemical_list$exclude) == 1, na.rm = TRUE)) {
+  if(!all(unique(chemical_list$EXCLUDE) == 1, na.rm = TRUE)) {
     stop("Only NA or 1 is allowed in the exclusion filter. Check the exclusion list and re-run the workflow.")
   }
   #inclusion_list <- as.integer(chemical_list[, chemical_list[is.na(EXCLUDE)]]$cas_number)
@@ -196,14 +199,13 @@ remove_excluded_chemicals <- function(object, project_path){
 
   exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
 
-  object$mortality_removed_chemicals <- object$mortality_filtered %>% filter(cas_number %in% exclusion_list)
-  object$mortality_filtered <- object$mortality_filtered %>% filter(cas_number %in% inclusion_list)
+  object$mortality_removed_chemicals <- tibble(object$mortality_filtered) %>% filter(cas_number %in% exclusion_list)
+  object$mortality_filtered <- tibble(object$mortality_filtered) %>% filter(cas_number %in% inclusion_list)
 
-  fwrite(object$mortality_filtered,file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")),
-                          sep = ",", dec = ".")
+  write_csv(object$mortality_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
 
   if(length(exclusion_list) > 0){
-    fwrite(object$mortality_filtered, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))), sep = ",", dec = ".")
+    write_csv(object$mortality_filtered, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))))
   }
   return(object)
 }
@@ -392,9 +394,9 @@ update_mol_units <- function(object, database_path = project$database_path, proj
       mutate(concentration_unit = "mg/L") %>%
       select(-AVERAGE_MASS)
 
-  object$mortality_filtered <- rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records)
+  object$mortality_filtered <- tibble(rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records))
 
-  message("[EcoToxR]: The following units are ")
+  message("[EcoToxR]: The data finally contains the following units ")
   print(unique(object$mortality_filtered$concentration_unit))
 
   #message("[EcoToxR]: Update the chemical properties.")
