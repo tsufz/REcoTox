@@ -109,7 +109,11 @@ calculate_water_solubility <- function(object = object){
     if(is.na(results$EXCLUDE[j]) & is.na(results[j, ..i])){
       results[j, AD] <- NA
 
-      }
+    }
+
+    else if(is.na(results$EXCLUDE[j]) & is.na(results$concentration_mean[j])){
+      results[j, AD] <- NA
+    }
 
     else if(is.na(results$EXCLUDE[j]) & results$concentration_mean[j] <= results[j, ..i]){
       results[j, AD] <- 3
