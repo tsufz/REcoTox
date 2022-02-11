@@ -284,13 +284,13 @@ remove_excluded_chemicals <- function(object, project_path){
 
   exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
 
-  object$mortality_removed_chemicals <- tibble(object$mortality_filtered) %>% filter(cas_number %in% exclusion_list)
-  object$mortality_filtered <- tibble(object$mortality_filtered) %>% filter(cas_number %in% inclusion_list)
+  object$mortality_removed_chemicals <- object$mortality_filtered %>% filter(cas_number %in% exclusion_list)
+  object$mortality_filtered <- object$mortality_filtered %>% filter(cas_number %in% inclusion_list)
 
   write_csv(object$mortality_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
 
-  if(length(exclusion_list) > 0){
-    write_csv(object$mortality_filtered, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))))
+  if(length(object$exclusion_list) > 0){
+    write_csv(object$mortality_removed_chemicals, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))))
   }
   return(object)
 }
