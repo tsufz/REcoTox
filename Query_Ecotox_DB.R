@@ -20,6 +20,24 @@ database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
 # Declare the project folder to store the files of your query
 project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Fish_EC10_EC90"
 
+# Declare the ecotox group ("Species Group")
+#ecotoxgroup = "Algae"
+#ecotoxgroup = "Fish"
+ecotoxgroup = "Fish"
+#ecotoxgroup = "Crustaceans"
+#
+
+
+# Declare species group specific data
+#
+
+# Fish / Crustacean
+#measurements = c("MORT", "SURV")
+
+# Algae
+#measurements = c("ABND","APCY","BMAS","CHLC","CHLO","CHLA","DBMS","DWGT","GPOP","GMOR","GGRO","INDX","MORT","PSYN","PSII","PPYT","PGRT","SPGR","SURV","VOLU","WGHT","WWGT")
+
+
 # create the project
 project <- create_project(database_path, project_path,
                           initalise_database_project = FALSE, # create the basic project from current ASCII files
@@ -50,25 +68,7 @@ project <- prepare_data(project = project,
                         load_initial_project = TRUE)
 
 # Reload the results of the first step
-load(file.path(project_path,"initial_project.RData"))
-
-
-
-# Declare species group specific data
-
-# Fish / Crustacean
-#measurements = c("MORT", "SURV")
-
-# Algae
-#measurements = c("ABND","APCY","BMAS","CHLC","CHLO","CHLA","DBMS","DWGT","GPOP","GMOR","GGRO","INDX","MORT","PSYN","PSII","PPYT","PGRT","SPGR","SURV","VOLU","WGHT","WWGT")
-
-# Declare the ecotox group ("Species Group")
-#ecotoxgroup = "Algae"
-#ecotoxgroup = "Fish"
-ecotoxgroup = "Fish"
-#ecotoxgroup = "Crustaceans"
-#
-
+# load(file.path(project_path,"initial_project.RData"))
 
 # Step 2: Filter the data on the specified criteria
 # A list of endpoints and species lists are stored in the project folder for selection
