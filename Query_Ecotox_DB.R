@@ -1,7 +1,7 @@
 {rm(list = ls())
 require(data.table)
-    require(sqldf)
-    require(tidyverse)
+#    require(sqldf)
+require(tidyverse)
 
 }
 
@@ -80,24 +80,27 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE
+                        all_species = TRUE, update_chemicals = TRUE
 )
 
-
-unique(project$object$mortality_filtered$ecotox_group)
-
-unique(project$object$mortality$endpoint)
 
 #load(file = file.path(project_path, paste0(ecotoxgroup,"_state1.RData")))
 
 # Step 3: Read the modified lists in and process the data including unit conversion
 # A list of chemicals is stored to update missing information on mol weights for data conversion
 
-project <- process_data(project, ecotoxgroup = ecotoxgroup,
-                        max_h = 120, max_d = 5,
-                        measurements = measurements)
+project <- process_data(project,
+                        ecotoxgroup = ecotoxgroup,
+                        max_h = 120,
+                        max_d = 5,
+                        kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
+                        #species_selection = "selected")
+                        #species_selection = "standard_species") # Standardized species only
+                        all_species = TRUE, update_chemicals = TRUE
+)
 
-#load(file = file.path(project_path,paste0(ecotoxgroup,"_state2.RData")))
+
+#load(file = file.path(project_path, paste0(ecotoxgroup,"_state2.RData")))
 
 
 # Step 4:
@@ -106,20 +109,31 @@ project <- process_data(project, ecotoxgroup = ecotoxgroup,
 # Edit this list to include newly added compounds (imputation of phys.-
 # chem. propertis and metadata)
 
-project <- process_data(project, ecotoxgroup = ecotoxgroup,
-                        max_h = 120, max_d = 5,
-                        measurements = measurements)
+project <- process_data(project,
+                        ecotoxgroup = ecotoxgroup,
+                        max_h = 120,
+                        max_d = 5,
+                        kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
+                        #species_selection = "selected")
+                        #species_selection = "standard_species") # Standardized species only
+                        all_species = TRUE, update_chemicals = TRUE
+)
 
-# load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
+#load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
 
 # Step 5:Process the final results and estimate the solubility domain
 # Optional: Update the basic chemical list in the database folder
 
-project <- process_data(project, ecotoxgroup = ecotoxgroup,
-                        max_h = 120, max_d = 5,
-                        measurements = measurements,
+project <- process_data(project,
+                        ecotoxgroup = ecotoxgroup,
+                        max_h = 120,
+                        max_d = 5,
+                        kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
+                        #species_selection = "selected")
+                        #species_selection = "standard_species") # Standardized species only
+                        all_species = TRUE,
                         update_chemicals = FALSE
-                        )
+)
 
 
 #load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
@@ -135,4 +149,4 @@ project <- calculate_pivot_table(project = project, quantile = 0.05)
 save(project,file = file.path(project_path,paste0(ecotoxgroup,"_processed_project.RData")), compress = TRUE)
 rstudioapi::documentSave()
 r_file <- rstudioapi::getSourceEditorContext()$path
-file.copy(r_file,file.path(project_path),overwrite = TRUE)
+file.copy(r_file,file.path(project_path), overwrite = TRUE)
