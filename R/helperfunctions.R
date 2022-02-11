@@ -70,6 +70,9 @@ calculate_hours <- function(object = object){
 
 
 calculate_water_solubility <- function(object = object){
+
+  message("[EcoToxR]:  Estimating the solubility domain")
+
   results <- object$results
 
   # OPERA
@@ -81,64 +84,142 @@ calculate_water_solubility <- function(object = object){
   # JC
   results <- results %>% rowwise() %>% mutate(JC_S_mg_L = 10^JC_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # JC output g/L
 
-  results <- data.table::data.table(results)
-
-  # Domain estimate solubility domain (based on ideas in ChemProp)
+    # Domain estimate solubility domain (based on ideas in ChemProp)
   # Case 1: if EC <= Sw -> 3
   # Case 2: if 5*log10 Sw >= EC > Sw -> 2
   # Case 3: if 10*log10 Sw >= EC > 5*log10 Sw -> 1
   # Case 4: if EC > 10*log10 Sw -> 0
 
-  s <- c("OPERA_S_mg_L", "ACD_S_mg_L", "JC_S_mg_L")
+  #s <- c("OPERA_S_mg_L", "ACD_S_mg_L", "JC_S_mg_L")
 
-  length_progressbar <- length(s)
-  pb <- progress::progress_bar$new(
-    format = "[EcoToxR]:  Estimating the solubility domain [:bar] :percent ETA: :eta",
-    total = length_progressbar, clear = FALSE, width = 80)
-
-  for(i in s){
-  AD <- paste0(i, "_AD")
-  results[, AD] <- NaN
-
-  # If concentration_mean is <= Sw, the
-  for(j in 1:nrow(results)){
-   #print(paste0(j, " of ", nrow(results), " in ", i))
+  #length_progressbar <- length(s)
+  # pb <- progress::progress_bar$new(
+  #   format = "[EcoToxR]:  Estimating the solubility domain [:bar] :percent ETA: :eta",
+  #   total = length_progressbar, clear = FALSE, width = 80)
+  #
+  # for(i in s){
+  # AD <- paste0(i, "_AD")
+  # results[, AD] <- NaN
+  # # A little bit redundant, but dynamic not yet implemented
 
 
+# Opera
+#
+  results <- results %>% mutate(OPERA_S_mg_L_AD = NA)
+  results <- results %>%
+      rowwise() %>%
+      mutate(
 
-    if(is.na(results$EXCLUDE[j]) & is.na(results[j, ..i])){
-      results[j, AD] <- NA
+          OPERA_S_mg_L_AD = case_when(
 
-    }
+              is.na(EXCLUDE) & concentration_mean <= OPERA_S_mg_L ~ 3,
 
-    else if(is.na(results$EXCLUDE[j]) & is.na(results$concentration_mean[j])){
-      results[j, AD] <- NA
-    }
+              is.na(EXCLUDE) & concentration_mean > OPERA_S_mg_L & concentration_mean <= 10^5 * log10(OPERA_S_mg_L) ~ 2,
 
-    else if(is.na(results$EXCLUDE[j]) & results$concentration_mean[j] <= results[j, ..i]){
-      results[j, AD] <- 3
+              is.na(EXCLUDE) & concentration_mean > OPERA_S_mg_L & concentration_mean > 10^5 * log10(OPERA_S_mg_L) & concentration_mean <= 10^10 * log10(OPERA_S_mg_L) ~ 1,
 
-      }
+              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(OPERA_S_mg_L) ~ 0
 
-    else if(results$concentration_mean[j] > results[j, ..i] & results$concentration_mean[j] <= 10^5 * log10(results[j, ..i])){
-      results[j, AD] <- 2
+          )
+      )
 
-      }
+  # ACD
+  #
+  results <- results %>% mutate(ACD_S_mg_L_AD = NA)
+  results <- results %>%
+      rowwise() %>%
+      mutate(
 
-    else if (results$concentration_mean[j] > 10^5 * log10(results[j, ..i]) & results$concentration_mean[j] <= 10^10 * log10(results[j, ..i])){
-      results[j, AD] <- 1
+          ACD_S_mg_L_AD = case_when(
 
-      }
+              is.na(EXCLUDE) & concentration_mean <= ACD_S_mg_L ~ 3,
 
-    else if (results$concentration_mean[j] > 10^10 * log10(results[j, ..i])){
-      results[j, AD] <- 0
+              is.na(EXCLUDE) & concentration_mean > ACD_S_mg_L & concentration_mean <= 10^5 * log10(ACD_S_mg_L) ~ 2,
 
-    }
-    }
-  pb$tick()
+              is.na(EXCLUDE) & concentration_mean > ACD_S_mg_L &
+                  concentration_mean > 10^5 * log10(ACD_S_mg_L) &
+                  concentration_mean <= 10^10 * log10(ACD_S_mg_L) ~ 1,
 
-  }
-  #pb$terminate()
+              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(ACD_S_mg_L) ~ 0
+
+
+          )
+      )
+
+  #JC
+
+  results <- results %>% mutate(JC_S_mg_L_AD = NA)
+  results <- results %>%
+      rowwise() %>%
+      mutate(
+
+          JC_S_mg_L_AD = case_when(
+
+              is.na(EXCLUDE) & concentration_mean <= JC_S_mg_L ~ 3,
+
+              is.na(EXCLUDE) & concentration_mean > JC_S_mg_L & concentration_mean <= 10^5 * log10(JC_S_mg_L) ~ 2,
+
+              is.na(EXCLUDE) & concentration_mean > JC_S_mg_L &
+                  concentration_mean > 10^5 * log10(JC_S_mg_L) &
+                  concentration_mean <= 10^10 * log10(JC_S_mg_L) ~ 1,
+
+              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(JC_S_mg_L) ~ 0
+
+
+          )
+      )
+
+
+  # Finally exclude if no meaningful data is available
+
+  results <- results %>%
+      rowwise() %>%
+      mutate(
+              EXCLUDE = case_when(is.na(EXCLUDE) & is.na(concentration_mean) ~ 1)
+
+      )
+
+
+  # # If concentration_mean is <= Sw, the
+  # for(j in 1:nrow(results)){
+  #  #print(paste0(j, " of ", nrow(results), " in ", i))
+  #
+  #
+  #
+  #   if(is.na(results$EXCLUDE[j]) & is.na(results[j, ..i])){
+  #     results[j, AD] <- NA
+  #
+  #   }
+  #
+  #   else if(is.na(results$EXCLUDE[j]) & is.na(results$concentration_mean[j])){
+  #     results[j, AD] <- NA
+  #     results$EXCLUDE[j] <- 1
+  #   }
+  #
+  #   else if(is.na(results$EXCLUDE[j]) & results$concentration_mean[j] <= results[j, ..i]){
+  #     results[j, AD] <- 3
+  #
+  #     }
+  #
+  #   else if(results$concentration_mean[j] > results[j, ..i] & results$concentration_mean[j] <= 10^5 * log10(results[j, ..i])){
+  #     results[j, AD] <- 2
+  #
+  #     }
+  #
+  #   else if (results$concentration_mean[j] > 10^5 * log10(results[j, ..i]) & results$concentration_mean[j] <= 10^10 * log10(results[j, ..i])){
+  #     results[j, AD] <- 1
+  #
+  #     }
+  #
+  #   else if (results$concentration_mean[j] > 10^10 * log10(results[j, ..i])){
+  #     results[j, AD] <- 0
+  #
+  #   }
+  #   }
+  # pb$tick()
+  #
+  # }
+  # #pb$terminate()
   object$results <- tibble(results)
   return(object)
 }
