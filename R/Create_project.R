@@ -21,22 +21,22 @@ create_project <- function(database_path, project_path, initalise_database_proje
     message("[EcoToxR]:  Read the Ecotox Knowledgebase ASCII files.")
     suppressWarnings({
       message("[EcoToxR]:  Read tests")
-      object$tests <- dplyr::tibble(fread(project$files[grep("tests.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = ""))
+      object$tests <- read_delim(project$files[grep("tests.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
 
       message("[EcoToxR]:  Read chemicals.")
-      object$chemicals <- dplyr::tibble(fread(project$files[grep("chemicals.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC"), dec = ".", stringsAsFactors = FALSE, quote = ""))
+      object$chemicals <- read_delim(project$files[grep("chemicals.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
 
       object$chemprop <- dplyr::tibble(create_chemical_properties(project$database_path))
 
       message("[EcoToxR]:  Read species.")
-      object$species <- dplyr::tibble(fread(project$files[grep("species.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = ""))
+      object$species <- read_delim(project$files[grep("species.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
 
       message("[EcoToxR]:  Read results.")
       #object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
-      object$results <- dplyr::tibble(read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\""))
+      object$results <- read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
 
       message("[EcoToxR]:  Read references.")
-      object$references <- dplyr::tibble(fread(project$files[grep("references.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE, quote = ""))
+      object$references <- read_delim(project$files[grep("references.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
     })
 
     #  Trim lists
