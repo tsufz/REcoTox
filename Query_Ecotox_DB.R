@@ -18,12 +18,12 @@ set.seed(4711456)
 database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
 
 # Declare the project folder to store the files of your query
-project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Fish_EC10_EC90"
+project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Algae_NOEC_EC100"
 
 # Declare the ecotox group ("Species Group")
-#ecotoxgroup = "Algae"
+ecotoxgroup = "Algae"
 #ecotoxgroup = "Fish"
-ecotoxgroup = "Fish"
+#ecotoxgroup = "Fish"
 #ecotoxgroup = "Crustaceans"
 #
 
@@ -60,12 +60,12 @@ project <- create_project(database_path, project_path,
 
 project <- prepare_data(project = project,
                         habitat = c("Water", "Non-Soil"),
-                        effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV"), # Fish / Crustacean
-                        # effects = c("MOR", "GRO", "POP", "REP"), # Algae
+                        #effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV"), # Fish / Crustacean
+                        effects = c("MOR", "GRO", "POP", "REP"), # Algae
                         save_project = TRUE,
                         remove_formulation = FALSE,
                         new_project_path = NA,
-                        load_initial_project = TRUE)
+                        load_initial_project = FALSE)
 
 # Reload the results of the first step
 # load(file.path(project_path,"initial_project.RData"))
@@ -132,11 +132,11 @@ project <- process_data(project,
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
                         all_species = TRUE,
-                        update_chemicals = FALSE
+                        update_chemicals = TRUE
 )
 
 
-#load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
+ #load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
 # save(project,file = file.path(project_path,paste0(prefix,"_pre_exclusion_project.RData")), compress = TRUE)
 
 
