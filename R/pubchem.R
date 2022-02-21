@@ -5,13 +5,14 @@ library(data.table)
 
 chemical_list <- read_csv("d:/chemical_properties.csv")
 
+# Split the list in entries with smiles and w/o smiles
 chemical_list_SMILES <- chemical_list %>% filter(!is.na(SMILES))
 chemical_list_no_SMILES <- chemical_list %>% filter(is.na(SMILES))
 
 
 
 
-# get information from pubchem
+# get information from pubchem to fill gaps of DTXSID query
 #
 #
 #
@@ -40,8 +41,8 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
 
     pb$tick()
 
-    #print(paste0("Retrieve no ", i, " out of ", nrow(chemical_list_no_SMILES)))
 
+    # lookup for CID based on CASRN
     casrn <- chemical_list_no_SMILES[i, "cas"][[1]]
     pccid <- get_cid(casrn)
     cas_number <- chemical_list_no_SMILES[i, "cas_number"][[1]]
@@ -64,7 +65,7 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
             "MONOISOTOPIC_MASS" = numeric()
         )
 
-        cas_numb <- cas_number
+        cas_numb <- cas_number # rename to avoid confusion
 
         pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
@@ -73,9 +74,9 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
         next()
 
     } else if (nrow(pccid) > 1) {
-
+        # Us the first entry in PubChem only
         pccid <- pccid %>% arrange(cid)
-        pccid <- pccid %>% slice_min(cid, n=1)
+        pccid <- pccid %>% slice_min(cid, n = 1)
 
     } else {
         pc_props <- tibble(pc_prop(pccid$cid, properties = c("Title",
@@ -104,7 +105,7 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
                 "MONOISOTOPIC_MASS" = numeric()
             )
 
-            cas_numb <- cas_number
+            cas_numb <- cas_number # rename to avoid confusion
 
             pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
@@ -114,7 +115,7 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
         }
 
 
-
+        # Postprocess the retrieved data
         pc_props <- pccid %>% left_join(pc_props, by = c("cid" = "CID"))
 
         if (!is_empty(which(names(pc_props) %like% "IUPACName"))) {
@@ -158,6 +159,7 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
 
 }
 
+# Output of webchem is character, needs to be fixed here.
 pubchem <- pubchem %>% mutate(across(cas_number, as.integer)) %>% mutate(across(AVERAGE_MASS:MONOISOTOPIC_MASS, as.double))
 
 chemicals_update <- chemical_list_no_SMILES %>% inner_join(pubchem %>% select(cas_number))
@@ -172,9 +174,12 @@ chemicals_update <- chemicals_update %>%
 
 chemical_list_no_SMILES <- chemical_list_no_SMILES %>% filter(cas_number != chemicals_update$cas_number)
 
+
+# recombine lists
 chemical_list <- rbind(chemical_list_SMILES, chemicals_update)
 
 
+# add comments and exclude those entries with remaining gaps
 chemical_list <- chemical_list %>% mutate(EXCLUDE = ifelse(FOUND_BY == "No data retrieved from PubChem", 1, EXCLUDE),
                                           REMARKS = ifelse(FOUND_BY == "No data retrieved from PubChem", "no data", REMARKS))
 
