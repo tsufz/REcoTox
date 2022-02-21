@@ -632,8 +632,14 @@ export_mol_units <- function(object, project_path = project$project_path) {
   colnames(chemprop)[col_num] <- "AVERAGE_MASS"
 
 
-  chemprop <- chemprop[order(chemprop$chemical_name),]
-  fwrite(chemprop,file_name, sep = ",", dec = ".", na = NA)
+  chemprop <- chemprop[order(chemprop$chemical_name), ]
+
+  chemprop <- chemprop %>% group_by(cas_number) %>% unique()
+
+  chemprop <- chemprop %>% group_by(FOUND_BY) %>% arrange(desc(FOUND_BY))
+
+  write_csv(x = chemprop, file = file_name, col_names = TRUE)
+
   return(object)
 }
 
@@ -642,9 +648,8 @@ update_mol_units <- function(object, database_path = project$database_path, proj
   ecotoxgroup <- object$parameters$ecotoxgroup
   file_name <- file.path(project_path, paste0(tolower(ecotoxgroup), "_mol_weight.csv"))
 
+  chemprop <- read_csv(file = file_name, col_names = TRUE, na = c("NA", "", NA, NaN), show_col_types = FALSE)
 
-
-  chemprop <- tibble(fread(file_name, sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN)))
   # chemprop <- format_chemical_properties(chemprop)
 
   # subset
@@ -657,7 +662,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
       mutate(concentration_unit = "mg/L") %>%
       select(-AVERAGE_MASS)
 
-  object$mortality_filtered <- tibble(rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records))
+  object$mortality_filtered <- rbind(object$mortality_filtered %>% filter(concentration_unit %in% c("mg/L", "ug/ul"), mol_records))
 
   message("[EcoToxR]: The data finally contains the following units ")
   print(unique(object$mortality_filtered$concentration_unit))
@@ -668,8 +673,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
 
   object$chemprop <- object$chemprop %>% mutate_all(na_if, "")
 
-  #fwrite(object$chemprop,file.path(database_path,"chemical_properties.csv"), sep = ",", dec = ".", quote = "\"", na = NA)
-  fwrite(object$chemprop, suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = c(NA, NaN, ""))
+  write_csv(x = object$chemprop, file = suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), col_names = TRUE)
 
   return(object)
 }
