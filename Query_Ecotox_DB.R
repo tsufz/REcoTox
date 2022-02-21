@@ -68,7 +68,7 @@ project <- prepare_data(project = project,
                         load_initial_project = FALSE)
 
 # Reload the results of the first step
-# load(file.path(project_path,"initial_project.RData"))
+#load(file.path(project_path,"initial_project.RData"))
 
 # Step 2: Filter the data on the specified criteria
 # A list of endpoints and species lists are stored in the project folder for selection
@@ -80,7 +80,8 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE, update_chemicals = TRUE
+                        all_species = TRUE,
+                        update_chemicals = FALSE
 )
 
 
@@ -96,7 +97,7 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE, update_chemicals = TRUE
+                        all_species = TRUE, update_chemicals = FALSE
 )
 
 
@@ -116,7 +117,8 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE, update_chemicals = TRUE
+                        all_species = TRUE,
+                        update_chemicals = FALSE
 )
 
 #load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
@@ -132,7 +134,7 @@ project <- process_data(project,
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
                         all_species = TRUE,
-                        update_chemicals = TRUE
+                        update_chemicals = FALSE
 )
 
 
