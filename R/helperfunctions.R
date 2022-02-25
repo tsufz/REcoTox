@@ -662,7 +662,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
       mutate(concentration_unit = "mg/L") %>%
       select(-AVERAGE_MASS)
 
-  object$mortality_filtered <- rbind(object$mortality_filtered %>% filter(concentration_unit %in% c("mg/L", "ug/ul"), mol_records))
+  object$mortality_filtered <- rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records)
 
   message("[EcoToxR]: The data finally contains the following units ")
   print(unique(object$mortality_filtered$concentration_unit))
@@ -765,7 +765,7 @@ convert_units <- function(object, sample_size = NA) {
 
 
   # g/L
-  g <- "(^(|(A|a)(e|i|E|I) )(g/(l|L)$))|(^mg/(ml|mL)$|(^g/dm3$))"
+  g <- "(^(|(A|a)(e|i|E|I) )(g/(l|L)$))|(^mg/(ml|mL)$|(^g/dm3$))|(^ug/(ul|uL)$)"
 
   if (nrow(object %>% filter(concentration_unit %like% g)) > 0) {
 
@@ -827,6 +827,20 @@ convert_units <- function(object, sample_size = NA) {
 
   message("[EcoToxR]:  The following units are left in the data:")
   print(unique(object$concentration_unit))
+
+
+  unit_test <- "(mg/L|mol/L)"
+
+  if (any(!unique(object$concentration_unit %like% unit_test))) {
+      message("[EcoToxR]")
+      message("[EcoToxR]:  ##########################################################")
+      message("[EcoToxR]:  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      message("[EcoToxR]:  The remaining units contain other than mg/L and mol/L.   !")
+      message("[EcoToxR]:  Contact the developer to update the unit conversion.     !")
+      message("[EcoToxR]:  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      message("[EcoToxR]:  ##########################################################")
+      message("[EcoToxR]")
+  }
 
 
   return(object)
