@@ -230,20 +230,16 @@ export_chemical_list <- function(object, project_path){
   message("[EcoToxR]:  Check the file for exclusion of chemicals.")
   message("[EcoToxR]:  Impute missing values for physical-chemical properties.")
   message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_chemical_list.csv and re-run the workflow."))
-  chemical_list <- data.table(unique(object$mortality_filtered[, c("cas_number", "cas", "chemical_name")]))
-  chemical_list <- left_join(chemical_list,object$chemprop[, c("cas_number", "FOUND_BY", "DTXSID", "PREFERRED_NAME",
-                                                               "CASRN", "INCHIKEY", "IUPAC_NAME", "SMILES", "INCHI_STRING",
-                                                               "MOLECULAR_FORMULA", "AVERAGE_MASS", "MONOISOTOPIC_MASS",
-                                                               "MS_READY_SMILES", "QSAR_READY_SMILES", "OPERA_LOG_P", "OPERA_LOG_P_AD",
-                                                              "OPERA_LOG_D_74", "OPERA_LOG_D_AD", "OPERA_LOG_S_74", "OPERA_LOG_S_AD",
-                                                              "ACD_LOG_P", "ACD_LOG_D_74", "ACD_LOG_S_74",
-                                                              "JC_LOG_P", "JC_LOG_S_74", "JC_LOG_D_74", "EXCLUDE", "REMARKS")],
-                                                               by = "cas_number"
-                             )
+  chemical_list <- object$mortality_filtered %>% select(cas_number, cas, chemical_name) %>% unique()
+  chemical_list <- object$mortality_filtered %>% select(cas_number, cas, chemical_name) %>% unique() %>%
+      left_join(object$chemprop %>% select(cas_number, FOUND_BY, DTXSID, PREFERRED_NAME,                                                                          CASRN, INCHIKEY, IUPAC_NAME, SMILES, INCHI_STRING,                                                                          MOLECULAR_FORMULA, AVERAGE_MASS, MONOISOTOPIC_MASS,
+                                                                          MS_READY_SMILES, QSAR_READY_SMILES, OPERA_LOG_P, OPERA_LOG_P_AD,
+                                                                          OPERA_LOG_D_74, OPERA_LOG_D_AD, OPERA_LOG_S_74, OPERA_LOG_S_AD,
+                                                                          ACD_LOG_P, ACD_LOG_D_74, ACD_LOG_S_74,
+                                                                          JC_LOG_P, JC_LOG_S_74, JC_LOG_D_74, EXCLUDE, REMARKS),
+                                               by = "cas_number") %>% arrange(FOUND_BY)
 
-  chemical_list <- chemical_list[order(chemical_list$chemical_name), ]
-  fwrite(chemical_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")))), sep = ",", dec = ".", na = NA)
-
+  write_csv(x = chemical_list, file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")))), col_names = TRUE)
 }
 
 export_exclude_list <- function(object, project_path){
