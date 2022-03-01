@@ -280,8 +280,8 @@ remove_excluded_chemicals <- function(object, project_path){
 
   exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
 
-  object$mortality_removed_chemicals <- object$mortality_filtered %>% filter(cas_number %in% exclusion_list)
-  object$mortality_filtered <- object$mortality_filtered %>% filter(cas_number %in% inclusion_list)
+  object$mortality_removed_chemicals <- tibble(data.table(object$mortality_filtered) %>% filter(cas_number %in% exclusion_list))
+  object$mortality_filtered <- tibble(data.table(object$mortality_filtered) %>% filter(cas_number %in% inclusion_list))
 
   write_csv(object$mortality_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
 
@@ -505,7 +505,7 @@ update_chemical_list <- function(object = object, project_path = project_path, d
 chemprop <- data.table(chemprop)
 chemprop[,(col_names2) := NULL]
 export_chemical_properties(object = chemprop, database_path = database_path, project_path = project_path)
-object$chemprop <- chemprop
+object$chemprop <- tibble(chemprop)
 
 return(object)
 }
@@ -534,8 +534,10 @@ export_chemical_properties <- function(object, database_path = database_path,
                                        project_path = project_path){
 
   object <- format_chemical_properties(object)
-  fwrite(object,suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = NA)
-  fwrite(object,suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = NA)
+  object <- tibble(object)
+
+  write_csv(object, suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), na = "NA")
+  write_csv(object, suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), na = "NA")
 
 }
 
