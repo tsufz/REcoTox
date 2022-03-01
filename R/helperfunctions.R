@@ -751,7 +751,7 @@ convert_units <- function(object, sample_size = NA) {
   } else {message("[EcoToxR]:  Skipping ng/L like units")}
 
   #µg related
-  ug <- "(^(|(A|a)(I|E|i|e) )ug/(l|L|dm3)$)|^ppb$|(^pg/u(l|L)$)|(^(|(A|a)(I|E|i|e) )ng/m(l|L)$)|^pg/u(l|L)"
+  ug <- "(^(|(A|a)(I|E|i|e) )ug/(l|L|dm3)$)|^mg/m3$|^ppb$|(^pg/u(l|L)$)|(^(|(A|a)(I|E|i|e) )ng/m(l|L)$)|^pg/u(l|L)"
 
   if (nrow(object %>% filter(concentration_unit %like% ug)) > 0) {
 
