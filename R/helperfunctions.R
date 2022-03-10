@@ -230,20 +230,16 @@ export_chemical_list <- function(object, project_path){
   message("[EcoToxR]:  Check the file for exclusion of chemicals.")
   message("[EcoToxR]:  Impute missing values for physical-chemical properties.")
   message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_chemical_list.csv and re-run the workflow."))
-  chemical_list <- data.table(unique(object$mortality_filtered[, c("cas_number", "cas", "chemical_name")]))
-  chemical_list <- left_join(chemical_list,object$chemprop[, c("cas_number", "FOUND_BY", "DTXSID", "PREFERRED_NAME",
-                                                               "CASRN", "INCHIKEY", "IUPAC_NAME", "SMILES", "INCHI_STRING",
-                                                               "MOLECULAR_FORMULA", "AVERAGE_MASS", "MONOISOTOPIC_MASS",
-                                                               "MS_READY_SMILES", "QSAR_READY_SMILES", "OPERA_LOG_P", "OPERA_LOG_P_AD",
-                                                              "OPERA_LOG_D_74", "OPERA_LOG_D_AD", "OPERA_LOG_S_74", "OPERA_LOG_S_AD",
-                                                              "ACD_LOG_P", "ACD_LOG_D_74", "ACD_LOG_S_74",
-                                                              "JC_LOG_P", "JC_LOG_S_74", "JC_LOG_D_74", "EXCLUDE", "REMARKS")],
-                                                               by = "cas_number"
-                             )
+  chemical_list <- object$mortality_filtered %>% select(cas_number, cas, chemical_name) %>% unique()
+  chemical_list <- object$mortality_filtered %>% select(cas_number, cas, chemical_name) %>% unique() %>%
+      left_join(object$chemprop %>% select(cas_number, FOUND_BY, DTXSID, PREFERRED_NAME,                                                                          CASRN, INCHIKEY, IUPAC_NAME, SMILES, INCHI_STRING,                                                                          MOLECULAR_FORMULA, AVERAGE_MASS, MONOISOTOPIC_MASS,
+                                                                          MS_READY_SMILES, QSAR_READY_SMILES, OPERA_LOG_P, OPERA_LOG_P_AD,
+                                                                          OPERA_LOG_D_74, OPERA_LOG_D_AD, OPERA_LOG_S_74, OPERA_LOG_S_AD,
+                                                                          ACD_LOG_P, ACD_LOG_D_74, ACD_LOG_S_74,
+                                                                          JC_LOG_P, JC_LOG_S_74, JC_LOG_D_74, EXCLUDE, REMARKS),
+                                               by = "cas_number") %>% arrange(FOUND_BY)
 
-  chemical_list <- chemical_list[order(chemical_list$chemical_name), ]
-  fwrite(chemical_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")))), sep = ",", dec = ".", na = NA)
-
+  write_csv(x = chemical_list, file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")))), col_names = TRUE)
 }
 
 export_exclude_list <- function(object, project_path){
@@ -284,8 +280,8 @@ remove_excluded_chemicals <- function(object, project_path){
 
   exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
 
-  object$mortality_removed_chemicals <- object$mortality_filtered %>% filter(cas_number %in% exclusion_list)
-  object$mortality_filtered <- object$mortality_filtered %>% filter(cas_number %in% inclusion_list)
+  object$mortality_removed_chemicals <- tibble(data.table(object$mortality_filtered) %>% filter(cas_number %in% exclusion_list))
+  object$mortality_filtered <- tibble(data.table(object$mortality_filtered) %>% filter(cas_number %in% inclusion_list))
 
   write_csv(object$mortality_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
 
@@ -293,6 +289,184 @@ remove_excluded_chemicals <- function(object, project_path){
     write_csv(object$mortality_removed_chemicals, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))))
   }
   return(object)
+}
+
+query_pubchem <- function(object = object) {
+
+    # Split the list in entries with smiles and w/o smiles
+    chemical_list_with_SMILES <- object %>% filter(!is.na(SMILES))
+    chemical_list_no_SMILES <- object %>% filter(is.na(SMILES))
+
+    # get information from pubchem to fill gaps of DTXSID query
+    #
+    pubchem <- tibble(
+        "cas_number" = integer(),
+        "cas" = character(),
+        "FOUND_BY" = character(),
+        "PREFERRED_NAME" = character(),
+        "CASRN" = character(),
+        "INCHIKEY" = character(),
+        "IUPAC_NAME" = character(),
+        "SMILES" = character(),
+        "INCHI_STRING" = character(),
+        "MOLECULAR_FORMULA" = character(),
+        "AVERAGE_MASS" = numeric(),
+        "MONOISOTOPIC_MASS" = numeric()
+    )
+
+
+    length_progressbar <- nrow(chemical_list_no_SMILES)
+    pb <- progress::progress_bar$new(
+        format = "[EcoToxR]:  Retrival of PubChem data [:bar] :percent ETA: :eta",
+        total = length_progressbar, clear = FALSE, width = 80)
+
+    for (i in 1:nrow(chemical_list_no_SMILES)){
+
+        pb$tick()
+
+
+        # lookup for CID based on CASRN
+        casrn <- chemical_list_no_SMILES[i, "cas"][[1]]
+        pccid <- get_cid(casrn)
+        cas_number <- chemical_list_no_SMILES[i, "cas_number"][[1]]
+        pccid <- pccid %>% mutate(across(cid, as.integer)) %>% mutate(cas_number = cas_number)
+
+
+        if (is.na(pccid$cid[[1]])) {
+            pubchem_new_row <- tibble(
+                "cas_number" = integer(),
+                "cas" = character(),
+                "FOUND_BY" = character(),
+                "PREFERRED_NAME" = character(),
+                "CASRN" = character(),
+                "INCHIKEY" = character(),
+                "IUPAC_NAME" = character(),
+                "SMILES" = character(),
+                "INCHI_STRING" = character(),
+                "MOLECULAR_FORMULA" = character(),
+                "AVERAGE_MASS" = numeric(),
+                "MONOISOTOPIC_MASS" = numeric()
+            )
+
+            cas_numb <- cas_number # rename to avoid confusion
+
+            pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
+
+            pubchem <- rbind(pubchem, pubchem_new_row)
+
+            next()
+
+        } else if (nrow(pccid) > 1) {
+            # Us the first entry in PubChem only
+            pccid <- pccid %>% arrange(cid)
+            pccid <- pccid %>% slice_min(cid, n = 1)
+
+        } else {
+            pc_props <- tibble(pc_prop(pccid$cid, properties = c("Title",
+                                                                 "InChIKey",
+                                                                 "IUPACName",
+                                                                 "CanonicalSMILES",
+                                                                 "InChI",
+                                                                 "MolecularFormula",
+                                                                 "MolecularWeight",
+                                                                 "MonoisotopicMass")))
+
+            if (is.na(pc_props$CanonicalSMILES)) {
+
+                pubchem_new_row <- tibble(
+                    "cas_number" = integer(),
+                    "cas" = character(),
+                    "FOUND_BY" = character(),
+                    "PREFERRED_NAME" = character(),
+                    "CASRN" = character(),
+                    "INCHIKEY" = character(),
+                    "IUPAC_NAME" = character(),
+                    "SMILES" = character(),
+                    "INCHI_STRING" = character(),
+                    "MOLECULAR_FORMULA" = character(),
+                    "AVERAGE_MASS" = numeric(),
+                    "MONOISOTOPIC_MASS" = numeric()
+                )
+
+                cas_numb <- cas_number # rename to avoid confusion
+
+                pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
+
+                pubchem <- rbind(pubchem, pubchem_new_row)
+
+                next()
+            }
+
+
+            # Postprocess the retrieved data
+            pc_props <- pccid %>% left_join(pc_props, by = c("cid" = "CID"))
+
+            if (!is_empty(which(names(pc_props) %like% "IUPACName"))) {
+
+                pc_props <- pc_props %>% rename(c("cas" = "query", "cid" = "cid", "cas_number" = "cas_number",
+                                                  "PREFERRED_NAME" = "Title",
+                                                  "MOLECULAR_FORMULA" = "MolecularFormula",
+                                                  "AVERAGE_MASS" = "MolecularWeight", "SMILES" = "CanonicalSMILES",
+                                                  "INCHI_STRING"  = "InChI", "INCHIKEY" = "InChIKey",
+                                                  "IUPAC_NAME" = "IUPACName", "MONOISOTOPIC_MASS" = "MonoisotopicMass"))
+
+                pc_props <- pc_props %>% mutate("CASRN" = cas)
+
+                pc_props <- pc_props %>% select(cas_number, cas, PREFERRED_NAME, CASRN,
+                                                INCHIKEY, IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA,
+                                                AVERAGE_MASS, MONOISOTOPIC_MASS)
+
+            } else {
+
+                pc_props <- pc_props %>% rename(c("cas" = "query", "cid" = "cid", "cas_number" = "cas_number",
+                                                  "PREFERRED_NAME" = "Title",
+                                                  "MOLECULAR_FORMULA" = "MolecularFormula",
+                                                  "AVERAGE_MASS" = "MolecularWeight", "SMILES" = "CanonicalSMILES",
+                                                  "INCHI_STRING"  = "InChI", "INCHIKEY" = "InChIKey",
+                                                  "MONOISOTOPIC_MASS" = "MonoisotopicMass"))
+
+                pc_props <- pc_props %>% mutate(IUPAC_NAME = NA)
+                pc_props <- pc_props %>% mutate(CASRN = cas)
+
+                pc_props <- pc_props %>% select(cas_number, cas, PREFERRED_NAME, CASRN,
+                                                INCHIKEY, IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA,
+                                                AVERAGE_MASS, MONOISOTOPIC_MASS)
+            }
+
+            pc_props <- pc_props %>% add_column(FOUND_BY = "PubChem", .before = 3)
+
+
+        }
+
+        pubchem <- pubchem %>% rbind(pc_props)
+
+    }
+
+    # Output of webchem is character, needs to be fixed here.
+    pubchem <- pubchem %>% mutate(across(cas_number, as.integer)) %>% mutate(across(AVERAGE_MASS:MONOISOTOPIC_MASS, as.double))
+
+    chemicals_update <- chemical_list_no_SMILES %>% inner_join(pubchem %>% select(cas_number))
+
+    chemicals_update <- chemicals_update %>%
+        mutate(FOUND_BY = pubchem$FOUND_BY, PREFERRED_NAME = pubchem$PREFERRED_NAME, CASRN = pubchem$CASRN,
+               INCHIKEY = pubchem$INCHIKEY, IUPAC_NAME = pubchem$IUPAC_NAME, SMILES = pubchem$SMILES,
+               INCHI_STRING = pubchem$INCHI_STRING, MOLECULAR_FORMULA = pubchem$MOLECULAR_FORMULA,
+               AVERAGE_MASS = pubchem$AVERAGE_MASS, MONOISOTOPIC_MASS = pubchem$MONOISOTOPIC_MASS
+        )
+
+
+    chemical_list_no_SMILES <- chemical_list_no_SMILES %>% filter(cas_number != chemicals_update$cas_number)
+
+
+    # recombine lists
+    chemical_list <- rbind(chemical_list_with_SMILES, chemicals_update)
+
+
+    # add comments and exclude those entries with remaining gaps
+    chemical_list <- chemical_list %>% mutate(EXCLUDE = ifelse(FOUND_BY == "No data retrieved from PubChem", 1, EXCLUDE),
+                                              REMARKS = ifelse(FOUND_BY == "No data retrieved from PubChem", "no data", REMARKS))
+
+
 }
 
 update_chemical_list <- function(object = object, project_path = project_path, database_path = database_path){
@@ -331,7 +505,7 @@ update_chemical_list <- function(object = object, project_path = project_path, d
 chemprop <- data.table(chemprop)
 chemprop[,(col_names2) := NULL]
 export_chemical_properties(object = chemprop, database_path = database_path, project_path = project_path)
-object$chemprop <- chemprop
+object$chemprop <- tibble(chemprop)
 
 return(object)
 }
@@ -360,8 +534,10 @@ export_chemical_properties <- function(object, database_path = database_path,
                                        project_path = project_path){
 
   object <- format_chemical_properties(object)
-  fwrite(object,suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = NA)
-  fwrite(object,suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = NA)
+  object <- tibble(object)
+
+  write_csv(object, suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), na = "NA")
+  write_csv(object, suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), na = "NA")
 
 }
 
@@ -394,36 +570,36 @@ create_chemical_properties <- function(database_path){
 }
 
 format_chemical_properties <- function(object){
-  object$cas_number <- as.integer(object$cas_number)
-  object$cas <- as.character(object$cas)
-  object$chemical_name <- as.character(object$chemical_name)
-  object$FOUND_BY <-  as.character(object$FOUND_BY)
-  object$DTXSID <- as.character(object$DTXSID)
-  object$PREFERRED_NAME <- as.character(object$PREFERRED_NAME)
-  object$CASRN <- as.character(object$CASRN)
-  object$INCHIKEY <- as.character(object$INCHIKEY)
-  object$IUPAC_NAME <- as.character(object$IUPAC_NAME)
-  object$SMILES <- as.character(object$SMILES)
-  object$INCHI_STRING <- as.character(object$INCHI_STRING)
-  object$MOLECULAR_FORMULA <- as.character(object$MOLECULAR_FORMULA)
-  object$AVERAGE_MASS <- as.numeric(object$AVERAGE_MASS)
-  object$MONOISOTOPIC_MASS <- as.numeric(object$MONOISOTOPIC_MASS)
-  object$MS_READY_SMILES <- as.character(object$MS_READY_SMILES)
-  object$QSAR_READY_SMILES <- as.character(object$QSAR_READY_SMILES)
-  object$OPERA_LOG_P <- as.numeric(object$OPERA_LOG_P)
-  object$OPERA_LOG_P_AD <- as.numeric(object$OPERA_LOG_P_AD)
-  object$OPERA_LOG_D_74 <- as.numeric(object$OPERA_LOG_D_74)
-  object$OPERA_LOG_D_AD <- as.numeric(object$OPERA_LOG_D_AD)
-  object$OPERA_LOG_S_74 <- as.numeric(object$OPERA_LOG_S_74)
-  object$OPERA_LOG_S_AD <- as.numeric(object$OPERA_LOG_S_AD)
-  object$ACD_LOG_P <- as.numeric(object$ACD_LOG_P)
-  object$ACD_LOG_D_74 <- as.numeric(object$ACD_LOG_D_74)
-  object$ACD_LOG_S_74 <- as.numeric(object$ACD_LOG_S_74)
-  object$JC_LOG_P <- as.numeric(object$JC_LOG_P)
-  object$JC_LOG_D_74 <- as.numeric(object$JC_LOG_D_74)
-  object$JC_LOG_S_74 <- as.numeric(object$JC_LOG_S_74)
-  object$EXCLUDE <- as.numeric(object$EXCLUDE)
-  object$REMARKS <- as.character(object$REMARKS)
+      suppressWarnings(object$cas_number <- as.integer(object$cas_number))
+      object$cas <- as.character(object$cas)
+      object$chemical_name <- as.character(object$chemical_name)
+      object$FOUND_BY <-  as.character(object$FOUND_BY)
+      object$DTXSID <- as.character(object$DTXSID)
+      object$PREFERRED_NAME <- as.character(object$PREFERRED_NAME)
+      object$CASRN <- as.character(object$CASRN)
+      object$INCHIKEY <- as.character(object$INCHIKEY)
+      object$IUPAC_NAME <- as.character(object$IUPAC_NAME)
+      object$SMILES <- as.character(object$SMILES)
+      object$INCHI_STRING <- as.character(object$INCHI_STRING)
+      object$MOLECULAR_FORMULA <- as.character(object$MOLECULAR_FORMULA)
+      suppressWarnings(object$AVERAGE_MASS <- as.numeric(object$AVERAGE_MASS))
+      suppressWarnings(object$MONOISOTOPIC_MASS <- as.numeric(object$MONOISOTOPIC_MASS))
+      object$MS_READY_SMILES <- as.character(object$MS_READY_SMILES)
+      object$QSAR_READY_SMILES <- as.character(object$QSAR_READY_SMILES)
+      object$OPERA_LOG_P <- as.numeric(object$OPERA_LOG_P)
+      object$OPERA_LOG_P_AD <- as.numeric(object$OPERA_LOG_P_AD)
+      object$OPERA_LOG_D_74 <- as.numeric(object$OPERA_LOG_D_74)
+      object$OPERA_LOG_D_AD <- as.numeric(object$OPERA_LOG_D_AD)
+      object$OPERA_LOG_S_74 <- as.numeric(object$OPERA_LOG_S_74)
+      object$OPERA_LOG_S_AD <- as.numeric(object$OPERA_LOG_S_AD)
+      object$ACD_LOG_P <- as.numeric(object$ACD_LOG_P)
+      object$ACD_LOG_D_74 <- as.numeric(object$ACD_LOG_D_74)
+      object$ACD_LOG_S_74 <- as.numeric(object$ACD_LOG_S_74)
+      object$JC_LOG_P <- as.numeric(object$JC_LOG_P)
+      object$JC_LOG_D_74 <- as.numeric(object$JC_LOG_D_74)
+      object$JC_LOG_S_74 <- as.numeric(object$JC_LOG_S_74)
+      object$EXCLUDE <- as.numeric(object$EXCLUDE)
+      object$REMARKS <- as.character(object$REMARKS)
   return(object)
 }
 
@@ -454,8 +630,14 @@ export_mol_units <- function(object, project_path = project$project_path) {
   colnames(chemprop)[col_num] <- "AVERAGE_MASS"
 
 
-  chemprop <- chemprop[order(chemprop$chemical_name),]
-  fwrite(chemprop,file_name, sep = ",", dec = ".", na = NA)
+  chemprop <- chemprop[order(chemprop$chemical_name), ]
+
+  chemprop <- chemprop %>% group_by(cas_number) %>% unique()
+
+  chemprop <- chemprop %>% group_by(FOUND_BY) %>% arrange(desc(FOUND_BY))
+
+  write_csv(x = chemprop, file = file_name, col_names = TRUE)
+
   return(object)
 }
 
@@ -464,9 +646,8 @@ update_mol_units <- function(object, database_path = project$database_path, proj
   ecotoxgroup <- object$parameters$ecotoxgroup
   file_name <- file.path(project_path, paste0(tolower(ecotoxgroup), "_mol_weight.csv"))
 
+  chemprop <- read_csv(file = file_name, col_names = TRUE, na = c("NA", "", NA, NaN), show_col_types = FALSE)
 
-
-  chemprop <- tibble(fread(file_name, sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN)))
   # chemprop <- format_chemical_properties(chemprop)
 
   # subset
@@ -479,7 +660,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
       mutate(concentration_unit = "mg/L") %>%
       select(-AVERAGE_MASS)
 
-  object$mortality_filtered <- tibble(rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records))
+  object$mortality_filtered <- rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records)
 
   message("[EcoToxR]: The data finally contains the following units ")
   print(unique(object$mortality_filtered$concentration_unit))
@@ -490,8 +671,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
 
   object$chemprop <- object$chemprop %>% mutate_all(na_if, "")
 
-  #fwrite(object$chemprop,file.path(database_path,"chemical_properties.csv"), sep = ",", dec = ".", quote = "\"", na = NA)
-  fwrite(object$chemprop, suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = c(NA, NaN, ""))
+  write_csv(x = object$chemprop, file = suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), col_names = TRUE)
 
   return(object)
 }
@@ -571,7 +751,7 @@ convert_units <- function(object, sample_size = NA) {
   } else {message("[EcoToxR]:  Skipping ng/L like units")}
 
   #µg related
-  ug <- "(^(|(A|a)(I|E|i|e) )ug/(l|L|dm3)$)|^ppb$|(^pg/u(l|L)$)|(^(|(A|a)(I|E|i|e) )ng/m(l|L)$)|^pg/u(l|L)"
+  ug <- "(^(|(A|a)(I|E|i|e) )ug/(l|L|dm3)$)|^mg/m3$|^ppb$|(^pg/u(l|L)$)|(^(|(A|a)(I|E|i|e) )ng/m(l|L)$)|^pg/u(l|L)"
 
   if (nrow(object %>% filter(concentration_unit %like% ug)) > 0) {
 
@@ -583,7 +763,7 @@ convert_units <- function(object, sample_size = NA) {
 
 
   # g/L
-  g <- "(^(|(A|a)(e|i|E|I) )(g/(l|L)$))|(^mg/(ml|mL)$|(^g/dm3$))"
+  g <- "(^(|(A|a)(e|i|E|I) )(g/(l|L)$))|(^mg/(ml|mL)$|(^g/dm3$))|(^ug/(ul|uL)$)"
 
   if (nrow(object %>% filter(concentration_unit %like% g)) > 0) {
 
@@ -645,6 +825,20 @@ convert_units <- function(object, sample_size = NA) {
 
   message("[EcoToxR]:  The following units are left in the data:")
   print(unique(object$concentration_unit))
+
+
+  unit_test <- "(mg/L|mol/L)"
+
+  if (any(!unique(object$concentration_unit %like% unit_test))) {
+      message("[EcoToxR]")
+      message("[EcoToxR]:  ##########################################################")
+      message("[EcoToxR]:  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      message("[EcoToxR]:  The remaining units contain other than mg/L and mol/L.   !")
+      message("[EcoToxR]:  Contact the developer to update the unit conversion.     !")
+      message("[EcoToxR]:  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      message("[EcoToxR]:  ##########################################################")
+      message("[EcoToxR]")
+  }
 
 
   return(object)

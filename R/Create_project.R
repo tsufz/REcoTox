@@ -4,6 +4,9 @@ source("./R/Calculate_pivot.R")
 #source("./R/EcoToxDB/Create_project.R")
 source("./R/Process_data.R")
 require(progress)
+require(webchem)
+require(tidyverse)
+require(data.table)
 
 create_project <- function(database_path, project_path, initalise_database_project = FALSE,
                            initalise_project = FALSE, load_default = FALSE){

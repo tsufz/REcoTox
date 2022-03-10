@@ -1,7 +1,7 @@
 {rm(list = ls())
-require(data.table)
+#require(data.table)
 #    require(sqldf)
-require(tidyverse)
+#require(tidyverse)
 
 }
 
@@ -18,14 +18,13 @@ set.seed(4711456)
 database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
 
 # Declare the project folder to store the files of your query
-project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Algae_NOEC_EC100"
+project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Crustacean_NOEC_EC100"
 
 # Declare the ecotox group ("Species Group")
-ecotoxgroup = "Algae"
+#ecotoxgroup = "Algae"
 #ecotoxgroup = "Fish"
-#ecotoxgroup = "Fish"
-#ecotoxgroup = "Crustaceans"
-#
+ecotoxgroup = "Crustaceans"
+
 
 
 # Declare species group specific data
@@ -39,10 +38,12 @@ ecotoxgroup = "Algae"
 
 
 # create the project
+#
 project <- create_project(database_path, project_path,
-                          initalise_database_project = FALSE, # create the basic project from current ASCII files
+                          initalise_database_project = FALSE, # create the basic project from current ASCII files in DB folder
                           initalise_project = TRUE, # initializes the project folder
-                          load_default = TRUE) # loads the default project in the project folder
+                          load_default = TRUE) # loads the default project in the project folder in the memory
+
 
 # initialise_database_project (TRUE/FALSE) - create a new basic database out of the EcoTox ASCII files
 # needs to be run each time the ASCII files are updated
@@ -60,8 +61,8 @@ project <- create_project(database_path, project_path,
 
 project <- prepare_data(project = project,
                         habitat = c("Water", "Non-Soil"),
-                        #effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV"), # Fish / Crustacean
-                        effects = c("MOR", "GRO", "POP", "REP"), # Algae
+                        effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV"), # Fish / Crustacean
+                        #effects = c("MOR", "GRO", "POP", "REP"), # Algae
                         save_project = TRUE,
                         remove_formulation = FALSE,
                         new_project_path = NA,
@@ -80,7 +81,7 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE,
+                        all_species = TRUE
                         update_chemicals = FALSE
 )
 
@@ -97,7 +98,8 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE, update_chemicals = FALSE
+                        all_species = TRUE,
+                        update_chemicals = FALSE
 )
 
 
@@ -117,7 +119,7 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE,
+                        all_species = TRUE
                         update_chemicals = FALSE
 )
 
@@ -138,7 +140,7 @@ project <- process_data(project,
 )
 
 
- #load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
+#load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
 # save(project,file = file.path(project_path,paste0(prefix,"_pre_exclusion_project.RData")), compress = TRUE)
 
 

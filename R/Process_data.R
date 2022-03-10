@@ -250,9 +250,9 @@
 
       #object <- calculate_water_solubility(object)
       object$state <- 4
-      write_csv(x = object$results, file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotox_group), "_final_results.csv")))))
+      write_csv(x = object$results, file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_final_results.csv")))))
       project$object <- object
-      save_project(project, project_path,save_project_steps)
+      save_project(project, project_path, save_project_steps)
       message("[EcoToxR]:  The data pre-processing is finalised.")
       message("[EcoToxR]:  Please run the pivot export workflow.")
       return(project)
