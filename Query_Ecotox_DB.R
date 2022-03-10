@@ -15,10 +15,10 @@ set.seed(4711456)
 # A comprehensive name is for example "EcoTox_Fish_EC50"
 
 
-database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
+database_path <- "your_database"
 
 # Declare the project folder to store the files of your query
-project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/EcoToxDB_Crustacean_NOEC_EC100"
+project_path <- "your_project"
 
 # Declare the ecotox group ("Species Group")
 #ecotoxgroup = "Algae"
@@ -81,7 +81,7 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE
+                        all_species = TRUE,
                         update_chemicals = FALSE
 )
 
@@ -119,7 +119,7 @@ project <- process_data(project,
                         kingdoms = c("Chromista","Plantae","Monera"), # valid only for algae
                         #species_selection = "selected")
                         #species_selection = "standard_species") # Standardized species only
-                        all_species = TRUE
+                        all_species = TRUE,
                         update_chemicals = FALSE
 )
 
