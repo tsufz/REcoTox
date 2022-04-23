@@ -27,10 +27,11 @@ prepare_data <- function(project,
 
   message("[EcoToxR]:  Merging tests, results and chemicals.")
 
-  # Fix field types
+  # Fix field type issues
   object$chemicals <- suppressWarnings(object$chemicals %>% mutate(cas_number = as.integer(cas_number)))
-  object$tests <- suppressWarnings(object$tests %>% mutate(cas_number = as.integer(cas_number)))
-  object$results <- suppressWarnings(object$results %>% mutate(endpoint = as.character(endpoint)))
+  object$tests <- suppressWarnings(object$tests %>% mutate(cas_number = as.integer(cas_number), reference_number = as.integer(reference_number), test_id = as.integer(test_id)))
+  object$results <- suppressWarnings(object$results %>% mutate(test_id = as.integer(test_id)))
+  object$references <- suppressWarnings(object$references %>% mutate(reference_number = as.integer(reference_number)))
 
   # Merge the raw tables
 
