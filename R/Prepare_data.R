@@ -46,16 +46,18 @@ prepare_data <- function(project,
   object$merged_results <- object$merged_results %>%
       mutate(endpoint = as.character(gsub("[*].*$", "", endpoint))) %>%
       mutate(endpoint = as.character(gsub("[/].*$", "", endpoint))) %>%
+      mutate(endpoint = as.character(gsub("[~].*$", "", endpoint))) %>%
       mutate(measurement = as.character(gsub("[*].*$", "", measurement))) %>%
       mutate(measurement = as.character(gsub("[/].*$", "", measurement))) %>%
+      mutate(measurement = as.character(gsub("[~].*$", "", measurement))) %>%
       mutate(effect = as.character(gsub("[*].*$", "", effect))) %>%
-      mutate(effect = as.character(gsub("[/].*$", "", effect)))
+      mutate(effect = as.character(gsub("[/].*$", "", effect))) %>%
+      mutate(effect = as.character(gsub("[~].*$", "", effect)))
 
   # Remove unnecessary tables to save space
 
   object$references <- NULL
   object$results <- NULL
-  object$species <- NULL
   object$tests <- NULL
 
   # Do some last things and return
