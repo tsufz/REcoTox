@@ -41,18 +41,27 @@ prepare_data <- function(project,
       left_join(object$references, by = "reference_number")
 
   # clean up data
-  message("[EcoToxR]:  Cleaning up effects, endpoints and measurements of asterics. tilde and slash artefacts.")
+  message("[EcoToxR]:  Cleaning up concentration, effects, endpoints, and measurements of asterics, tilde and slash artefacts. Fixing field type issues.")
 
   object$merged_results <- object$merged_results %>%
-      mutate(endpoint = as.character(gsub("[*].*$", "", endpoint))) %>%
-      mutate(endpoint = as.character(gsub("[/].*$", "", endpoint))) %>%
-      mutate(endpoint = as.character(gsub("[~].*$", "", endpoint))) %>%
-      mutate(measurement = as.character(gsub("[*].*$", "", measurement))) %>%
-      mutate(measurement = as.character(gsub("[/].*$", "", measurement))) %>%
-      mutate(measurement = as.character(gsub("[~].*$", "", measurement))) %>%
-      mutate(effect = as.character(gsub("[*].*$", "", effect))) %>%
-      mutate(effect = as.character(gsub("[/].*$", "", effect))) %>%
-      mutate(effect = as.character(gsub("[~].*$", "", effect)))
+      mutate(endpoint = as.character(gsub("\\*", "", endpoint)),
+             endpoint = as.character(gsub("\\/", "", endpoint)),
+             endpoint = as.character(gsub("\\~", "", endpoint)),
+
+             measurement = as.character(gsub("\\*", "", measurement)),
+             measurement = as.character(gsub("\\/", "", measurement)),
+             measurement = as.character(gsub("\\~", "", measurement)),
+
+             effect = as.character(gsub("\\*", "", effect)),
+             effect = as.character(gsub("\\/", "", effect)),
+             effect = as.character(gsub("\\~", "", effect)),
+
+             conc1_mean = as.numeric(gsub("\\*", "", conc1_mean)),
+             conc1_min = as.numeric(gsub("\\*", "", conc1_min)),
+             conc1_max = as.numeric(gsub("\\*", "", conc1_max)),
+
+             publication_year = as.integer(publication_year)
+  )
 
   # Remove unnecessary tables to save space
 

@@ -510,25 +510,6 @@ object$chemprop <- tibble(chemprop)
 return(object)
 }
 
-tidy_conc_values <- function(object){
-  # message("Remove effect reportings which have asterics")
-  # Remove all wired effect reportings
-  ## Replace by an export mechanism
-  object <- object %>% mutate(conc1_mean = gsub("\\*", "", conc1_mean),
-                              conc1_min = gsub("\\*", "", conc1_min),
-                              conc1_max = gsub("\\*", "", conc1_max))
-
-
-  object <- suppressWarnings(object %>% mutate(conc1_mean = as.numeric(conc1_mean),
-                              conc1_min = as.numeric(conc1_min),
-                              conc1_max = as.numeric(conc1_max),
-                              publication_year = as.integer(publication_year))
-  )
-
-  return(object)
-}
-
-
 # Handle the chemical lists
 export_chemical_properties <- function(object, database_path = database_path,
                                        project_path = project_path){
