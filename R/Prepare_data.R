@@ -56,11 +56,11 @@ prepare_data <- function(project,
              effect = as.character(gsub("\\/", "", effect)),
              effect = as.character(gsub("\\~", "", effect)),
 
-             conc1_mean = as.numeric(gsub("\\*", "", conc1_mean)),
-             conc1_min = as.numeric(gsub("\\*", "", conc1_min)),
-             conc1_max = as.numeric(gsub("\\*", "", conc1_max)),
+             conc1_mean = suppressWarnings(as.numeric(gsub("\\*", "", conc1_mean))),
+             conc1_min = suppressWarnings(as.numeric(gsub("\\*", "", conc1_min))),
+             conc1_max = suppressWarnings(as.numeric(gsub("\\*", "", conc1_max))),
 
-             publication_year = as.integer(publication_year)
+             publication_year = suppressWarnings(as.integer(publication_year))
   )
 
   # Remove unnecessary tables to save space
