@@ -2,7 +2,7 @@
 
 build_final_list <- function(object = object){
 
-  results <- data.table(object$mortality_filtered)
+  results <- data.table(object$results_filtered)
 
   if(is.null(results$include_species)){
     results[, "include_species" := NA]
@@ -230,8 +230,8 @@ export_chemical_list <- function(object, project_path){
   message("[EcoToxR]:  Check the file for exclusion of chemicals.")
   message("[EcoToxR]:  Impute missing values for physical-chemical properties.")
   message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_chemical_list.csv and re-run the workflow."))
-  chemical_list <- object$mortality_filtered %>% select(cas_number, cas, chemical_name) %>% unique()
-  chemical_list <- object$mortality_filtered %>% select(cas_number, cas, chemical_name) %>% unique() %>%
+  chemical_list <- object$results_filtered %>% select(cas_number, cas, chemical_name) %>% unique()
+  chemical_list <- object$results_filtered %>% select(cas_number, cas, chemical_name) %>% unique() %>%
       left_join(object$chemprop %>% select(cas_number, FOUND_BY, DTXSID, PREFERRED_NAME,                                                                          CASRN, INCHIKEY, IUPAC_NAME, SMILES, INCHI_STRING,                                                                          MOLECULAR_FORMULA, AVERAGE_MASS, MONOISOTOPIC_MASS,
                                                                           MS_READY_SMILES, QSAR_READY_SMILES, OPERA_LOG_P, OPERA_LOG_P_AD,
                                                                           OPERA_LOG_D_74, OPERA_LOG_D_AD, OPERA_LOG_S_74, OPERA_LOG_S_AD,
@@ -246,17 +246,17 @@ export_exclude_list <- function(object, project_path){
   message("[EcoToxR]:  Exporting the final list to the project folder.")
   message("[EcoToxR]:  Check the file for exclusion of records.")
   message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv and re-run the workflow."))
-  exclude <- data.table(matrix(nrow = nrow(object$mortality_filtered), ncol = 2))
+  exclude <- data.table(matrix(nrow = nrow(object$results_filtered), ncol = 2))
   colnames(exclude) <- c("exclude", "exclusion_comment")
-  exclude_list <- data.table(exclude,object$mortality_filtered)
-  object$mortality_filtered_exclude_list <- data.table(exclude_list[, c("exclude", "exclusion_comment", "result_id", "cas_number", "cas", "chemical_name",
+  exclude_list <- data.table(exclude,object$results_filtered)
+  object$results_filtered_exclude_list <- data.table(exclude_list[, c("exclude", "exclusion_comment", "result_id", "cas_number", "cas", "chemical_name",
                                                                        colnames(exclude_list)[grep(pattern = "conc1", colnames(exclude_list))],
                                                                        "species_number", "concentration_mean", "concentration_unit",
                                                                        "latin_name", "author", "title", "source", "publication_year"),
                                                                     with = FALSE])
-  object$mortality_filtered_exclude_list <- data.table(object$mortality_filtered_exclude_list[order(chemical_name)])
-  fwrite(data.table(unique(object$mortality_filtered_exclude_list$cas)), suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list_cas.csv")))), sep = ",", dec = ".")
-  fwrite(object$mortality_filtered_exclude_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv")))), sep = ",", dec = ".")
+  object$results_filtered_exclude_list <- data.table(object$results_filtered_exclude_list[order(chemical_name)])
+  fwrite(data.table(unique(object$results_filtered_exclude_list$cas)), suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list_cas.csv")))), sep = ",", dec = ".")
+  fwrite(object$results_filtered_exclude_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv")))), sep = ",", dec = ".")
   return(object)
 }
 
@@ -280,10 +280,10 @@ remove_excluded_chemicals <- function(object, project_path){
 
   exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
 
-  object$mortality_removed_chemicals <- tibble(data.table(object$mortality_filtered) %>% filter(cas_number %in% exclusion_list))
-  object$mortality_filtered <- tibble(data.table(object$mortality_filtered) %>% filter(cas_number %in% inclusion_list))
+  object$mortality_removed_chemicals <- tibble(data.table(object$results_filtered) %>% filter(cas_number %in% exclusion_list))
+  object$results_filtered <- tibble(data.table(object$results_filtered) %>% filter(cas_number %in% inclusion_list))
 
-  write_csv(object$mortality_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
+  write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
 
   if(length(object$exclusion_list) > 0){
     write_csv(object$mortality_removed_chemicals, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))))
