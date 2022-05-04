@@ -594,7 +594,7 @@ export_mol_units <- function(object, project_path = project$project_path) {
   message(paste0("[EcoToxR]:  Edit the file ", tolower(ecotoxgroup), "_mol_weight.csv and re-run the workflow."))
   message("[EcoToxR]:  Add only missing data to column 'AVERAGE_MASS'.")
 
-  chemprop <- object$mortality_filtered %>%
+  chemprop <- object$results_filtered %>%
       filter(conc1_unit %like% "mol/L") %>%
       select(cas_number, cas, chemical_name) %>%
       add_column("AVERAGE_MASS" = NA)
@@ -633,7 +633,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
 
   # subset
 
-  mol_records <- object$mortality_filtered %>%
+  mol_records <- object$results_filtered %>%
       filter(concentration_unit %like% "mol/L") %>%
       left_join(chemprop %>% select(cas_number, AVERAGE_MASS), by = "cas_number") %>%
       rowwise() %>%
@@ -641,10 +641,10 @@ update_mol_units <- function(object, database_path = project$database_path, proj
       mutate(concentration_unit = "mg/L") %>%
       select(-AVERAGE_MASS)
 
-  object$mortality_filtered <- rbind(object$mortality_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records)
+  object$results_filtered <- rbind(object$results_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records)
 
   message("[EcoToxR]: The data finally contains the following units ")
-  print(unique(object$mortality_filtered$concentration_unit))
+  print(unique(object$object$results_filtered$concentration_unit))
 
   #message("[EcoToxR]: Update the chemical properties.")
 
