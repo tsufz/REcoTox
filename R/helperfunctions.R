@@ -804,6 +804,16 @@ convert_units <- function(object, sample_size = NA) {
 
   } else {message("[EcoToxR]:  Skipping mmol/L like units")}
 
+
+  #mol related
+  mol <- "^(|(A|a)(I|E|i|e) )mol/(dm3)$"
+
+  if (nrow(object %>% filter(concentration_unit %like% mol)) > 0) {
+      message("[EcoToxR]:  Converting mol like units")
+      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% mol, "mol/L", concentration_unit))
+  } else {message("[EcoToxR]:  Skipping mol/L like units")}
+
+
   message("[EcoToxR]:  The following units are left in the data:")
   print(unique(object$concentration_unit))
 
