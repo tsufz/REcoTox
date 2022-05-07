@@ -641,10 +641,10 @@ update_mol_units <- function(object, database_path = project$database_path, proj
       mutate(concentration_unit = "mg/L") %>%
       select(-AVERAGE_MASS)
 
-  object$results_filtered <- rbind(object$results_filtered %>% filter(concentration_unit %like% "mg/L"), mol_records)
+  object$results_filtered <- rbind(object$results_filtered %>% filter(concentration_unit == "mg/L"), mol_records)
 
   message("[EcoToxR]: The data finally contains the following units ")
-  print(unique(object$object$results_filtered$concentration_unit))
+  print(unique(object$results_filtered$concentration_unit))
 
   #message("[EcoToxR]: Update the chemical properties.")
 
@@ -831,7 +831,6 @@ convert_units <- function(object, sample_size = NA) {
       message("[EcoToxR]")
   }
 
-
   return(object)
 
 }
@@ -848,12 +847,13 @@ convert_units <- function(object, sample_size = NA) {
 #   return(object)
 # }
 
-save_project <- function(object = object, project_path = project_path, save_project_steps = save_project_steps){
+save_project <- function(object = object, save_project_steps = save_project_steps){
   state <- object$object$state
+  project_path <- object$project_path
   ecotoxgroup <- object$object$parameters$ecotoxgroup
   if(isTRUE(save_project_steps)){
     project <- object
     message("[EcoToxR]:  Saving the project state.")
-    save(project,file = file.path(project_path,paste0(tolower(ecotoxgroup),"_state", state,".RData")), compress = TRUE)
+    save(project,file = file.path(project_path, paste0(tolower(ecotoxgroup), "_state", state, ".RData")), compress = TRUE)
   }
 }
