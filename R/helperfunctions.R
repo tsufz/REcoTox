@@ -2,51 +2,46 @@
 
 build_final_list <- function(object = object){
 
-  results <- data.table(object$results_filtered)
+  results <- object$results_filtered
 
   if(is.null(results$include_species)){
     results[, "include_species" := NA]
   }
 
-  select_columns <- c("cas_number", "cas", "chemical_name", "compound_class", "test_location", "conc1_type", "conc1_mean_op",
+
+  results <- results %>% select("cas_number", "cas", "chemical_name", "compound_class", "test_location", "conc1_type", "conc1_mean_op",
                       "conc1_mean", "conc1_min_op", "conc1_min", "conc1_max_op", "conc1_max", "conc1_unit",
                       "conc1_comments", "concentration_mean", "concentration_unit", "obs_duration_mean",
                       "obs_duration_unit", "test_id", "reference_number", "endpoint", "endpoint_comments", "effect",
-                      "effect_comments", "measurement", "measurement_comments", "organism_lifestage", "common_name", "latin_name", "kingdom", "phylum_division",
-                      "subphylum_div", "superclass", "class", "tax_order", "family", "genus", "species", "subspecies",
+                      "effect_comments", "measurement", "measurement_comments", "organism_lifestage", "common_name", "latin_name", "kingdom",
+                      "phylum_division", "subphylum_div", "superclass", "class", "tax_order", "family", "genus", "species", "subspecies",
                       "variety", "ecotox_group", "result_id", "reference_db", "reference_type", "author",
                       "title", "source", "publication_year", "include_endpoint", "include_species")
 
-  results <- data.table(results[, ..select_columns])
 
-  results <- data.table(left_join(results, object$chemprop[, c("cas_number", "DTXSID", "PREFERRED_NAME", "CASRN", "SMILES",
-                                                  "INCHIKEY", "AVERAGE_MASS", "OPERA_LOG_P", "OPERA_LOG_P_AD",
-                                                  "OPERA_LOG_D_74", "OPERA_LOG_D_AD",	"OPERA_LOG_S_74",	"OPERA_LOG_S_AD",
-                                                  "ACD_LOG_P", "ACD_LOG_D_74", "ACD_LOG_S_74", "JC_LOG_P",	"JC_LOG_D_74",
-                                                  "JC_LOG_S_74", "EXCLUDE", "REMARKS")],
+  results <- results %>% left_join(object$chemprop %>% select("cas_number", "DTXSID", "PREFERRED_NAME", "CASRN", "SMILES",
+                                                  "INCHIKEY", "MOLECULAR_FORMULA", "AVERAGE_MASS",
+                                                  "MONOISOTOPIC_MASS", "LOG_S", "LOG_S_AD",
+                                                  "LOG_S_COMMENT", "EXCLUDE", "REMARKS"),
                                                   by = "cas_number")
   )
 
   # reorder list
 
-  select_columns <- c("EXCLUDE", "REMARKS", "cas_number", "cas", "DTXSID", "PREFERRED_NAME", "test_location", "reference_number",
-                      "conc1_type", "conc1_mean_op", "conc1_mean", "conc1_min_op", "conc1_min", "conc1_max_op", "conc1_max",
-                      "conc1_unit", "conc1_comments", "concentration_mean", "concentration_unit", "test_id",
-                      "endpoint", "endpoint_comments", "effect", "effect_comments",
-                      "measurement", "measurement_comments", "obs_duration_mean",
-                      "obs_duration_unit", "organism_lifestage", "common_name", "latin_name", "kingdom",
-                      "phylum_division", "subphylum_div", "superclass", "class", "tax_order", "family",
-                      "genus", "species", "subspecies", "variety", "ecotox_group", "chemical_name",
-                      "compound_class", "CASRN", "SMILES", "INCHIKEY", "AVERAGE_MASS",
-                      "OPERA_LOG_P", "OPERA_LOG_P_AD", "OPERA_LOG_D_74", "OPERA_LOG_D_AD", "OPERA_LOG_S_74", "OPERA_LOG_S_AD",
-                      "ACD_LOG_P", "ACD_LOG_D_74", "ACD_LOG_S_74", "JC_LOG_P", "JC_LOG_D_74",
-                      "JC_LOG_S_74", "reference_db", "result_id", "reference_type", "author",
-                      "title", "source", "publication_year", "include_endpoint", "include_species")
-
-
-  results <- results[,..select_columns]
-
-  object$results <- tibble(results)
+  results <- results %>% select("EXCLUDE", "REMARKS", "cas_number", "cas", "DTXSID", "CID", "PREFERRED_NAME", "test_location",
+                                "reference_number",
+                                "conc1_type", "conc1_mean_op", "conc1_mean", "conc1_min_op", "conc1_min", "conc1_max_op", "conc1_max",
+                                "conc1_unit", "conc1_comments", "concentration_mean", "concentration_unit", "test_id",
+                                "endpoint", "endpoint_comments", "effect", "effect_comments",
+                                "measurement", "measurement_comments", "obs_duration_mean",
+                                "obs_duration_unit", "organism_lifestage", "common_name", "latin_name", "kingdom",
+                                "phylum_division", "subphylum_div", "superclass", "class", "tax_order", "family",
+                                "genus", "species", "subspecies", "variety", "ecotox_group", "chemical_name",
+                                "compound_class", "CASRN", "SMILES", "INCHIKEY", "MS_READY_SMILES",
+                                "QSAR_READY_SMILES", "MOLECULAR_FORMULA", "AVERAGE_MASS",
+                                "MONOISOTOPIC_MASS", "LOG_S", "LOG_S_AD", "LOG_S_COMMENT", "reference_db", "result_id", "reference_type",
+                                "author", "title", "source", "publication_year", "include_endpoint", "include_species")
+  object$results <- results
   return(object)
 }
 
@@ -75,22 +70,15 @@ calculate_water_solubility <- function(object = object){
 
   results <- object$results
 
-  # OPERA
-  results <- results %>% rowwise() %>% mutate(OPERA_S_mg_L = 10^OPERA_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # OPERA output g/L
+  # Calculate S in mg/L
+  results <- results %>% rowwise() %>% mutate(LOG_S_mg_L = 10^LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # OPERA output g/L
 
-  # ACD
-  results <- results %>% rowwise() %>% mutate(ACD_S_mg_L = 10^ACD_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # ACD output g/L
-
-  # JC
-  results <- results %>% rowwise() %>% mutate(JC_S_mg_L = 10^JC_LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # JC output g/L
-
-    # Domain estimate solubility domain (based on ideas in ChemProp)
+  # Domain estimate solubility domain (based on ideas in ChemProp)
   # Case 1: if EC <= Sw -> 3
   # Case 2: if 5*log10 Sw >= EC > Sw -> 2
   # Case 3: if 10*log10 Sw >= EC > 5*log10 Sw -> 1
   # Case 4: if EC > 10*log10 Sw -> 0
 
-  #s <- c("OPERA_S_mg_L", "ACD_S_mg_L", "JC_S_mg_L")
 
   #length_progressbar <- length(s)
   # pb <- progress::progress_bar$new(
@@ -105,66 +93,20 @@ calculate_water_solubility <- function(object = object){
 
 # Opera
 #
-  results <- results %>% mutate(OPERA_S_mg_L_AD = NA)
+  results <- results %>% mutate(LOG_S_mg_L_AD = NA)
   results <- results %>%
       rowwise() %>%
       mutate(
 
-          OPERA_S_mg_L_AD = case_when(
+          LOG_S_mg_L_AD = case_when(
 
-              is.na(EXCLUDE) & concentration_mean <= OPERA_S_mg_L ~ 3,
+              is.na(EXCLUDE) & concentration_mean <= LOG_S_mg_L ~ 3,
 
-              is.na(EXCLUDE) & concentration_mean > OPERA_S_mg_L & concentration_mean <= 10^5 * log10(OPERA_S_mg_L) ~ 2,
+              is.na(EXCLUDE) & concentration_mean > LOG_S_mg_L & concentration_mean <= 10^5 * log10(LOG_S_mg_L) ~ 2,
 
-              is.na(EXCLUDE) & concentration_mean > OPERA_S_mg_L & concentration_mean > 10^5 * log10(OPERA_S_mg_L) & concentration_mean <= 10^10 * log10(OPERA_S_mg_L) ~ 1,
+              is.na(EXCLUDE) & concentration_mean > LOG_S_mg_L & concentration_mean > 10^5 * log10(LOG_S_mg_L) & concentration_mean <= 10^10 * log10(LOG_S_mg_L) ~ 1,
 
-              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(OPERA_S_mg_L) ~ 0
-
-          )
-      )
-
-  # ACD
-  #
-  results <- results %>% mutate(ACD_S_mg_L_AD = NA)
-  results <- results %>%
-      rowwise() %>%
-      mutate(
-
-          ACD_S_mg_L_AD = case_when(
-
-              is.na(EXCLUDE) & concentration_mean <= ACD_S_mg_L ~ 3,
-
-              is.na(EXCLUDE) & concentration_mean > ACD_S_mg_L & concentration_mean <= 10^5 * log10(ACD_S_mg_L) ~ 2,
-
-              is.na(EXCLUDE) & concentration_mean > ACD_S_mg_L &
-                  concentration_mean > 10^5 * log10(ACD_S_mg_L) &
-                  concentration_mean <= 10^10 * log10(ACD_S_mg_L) ~ 1,
-
-              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(ACD_S_mg_L) ~ 0
-
-
-          )
-      )
-
-  #JC
-
-  results <- results %>% mutate(JC_S_mg_L_AD = NA)
-  results <- results %>%
-      rowwise() %>%
-      mutate(
-
-          JC_S_mg_L_AD = case_when(
-
-              is.na(EXCLUDE) & concentration_mean <= JC_S_mg_L ~ 3,
-
-              is.na(EXCLUDE) & concentration_mean > JC_S_mg_L & concentration_mean <= 10^5 * log10(JC_S_mg_L) ~ 2,
-
-              is.na(EXCLUDE) & concentration_mean > JC_S_mg_L &
-                  concentration_mean > 10^5 * log10(JC_S_mg_L) &
-                  concentration_mean <= 10^10 * log10(JC_S_mg_L) ~ 1,
-
-              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(JC_S_mg_L) ~ 0
-
+              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(LOG_S_mg_L) ~ 0
 
           )
       )
@@ -179,7 +121,7 @@ calculate_water_solubility <- function(object = object){
 
       )
 
-
+# this is only for debugging
   # # If concentration_mean is <= Sw, the
   # for(j in 1:nrow(results)){
   #  #print(paste0(j, " of ", nrow(results), " in ", i))
@@ -220,7 +162,7 @@ calculate_water_solubility <- function(object = object){
   #
   # }
   # #pb$terminate()
-  object$results <- tibble(results)
+  object$results <- results
   return(object)
 }
 
@@ -232,12 +174,12 @@ export_chemical_list <- function(object, project_path){
   message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_chemical_list.csv and re-run the workflow."))
   chemical_list <- object$results_filtered %>% select(cas_number, cas, chemical_name) %>% unique()
   chemical_list <- object$results_filtered %>% select(cas_number, cas, chemical_name) %>% unique() %>%
-      left_join(object$chemprop %>% select(cas_number, FOUND_BY, DTXSID, PREFERRED_NAME,                                                                          CASRN, INCHIKEY, IUPAC_NAME, SMILES, INCHI_STRING,                                                                          MOLECULAR_FORMULA, AVERAGE_MASS, MONOISOTOPIC_MASS,
-                                                                          MS_READY_SMILES, QSAR_READY_SMILES, OPERA_LOG_P, OPERA_LOG_P_AD,
-                                                                          OPERA_LOG_D_74, OPERA_LOG_D_AD, OPERA_LOG_S_74, OPERA_LOG_S_AD,
-                                                                          ACD_LOG_P, ACD_LOG_D_74, ACD_LOG_S_74,
-                                                                          JC_LOG_P, JC_LOG_S_74, JC_LOG_D_74, EXCLUDE, REMARKS),
-                                               by = "cas_number") %>% arrange(FOUND_BY)
+      left_join(object$chemprop %>% select(cas_number, FOUND_BY, DTXSID, CID, PREFERRED_NAME, CASRN, INCHIKEY,
+                                           IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA, AVERAGE_MASS,
+                                           MONOISOTOPIC_MASS, QSAR_READY_SMILES, LOG_S, LOG_S_AD, LOG_S_COMMENT,
+                                           EXCLUDE, REMARKS),
+                by = "cas_number") %>%
+      arrange(FOUND_BY)
 
   write_csv(x = chemical_list, file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")))), col_names = TRUE)
 }
@@ -264,7 +206,6 @@ remove_excluded_chemicals <- function(object, project_path){
 
   chemical_list <- read_csv(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")),
                             na = c("NA", "", NA, NaN))
-  #fread(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")), sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN))
 
   suppressWarnings(chemical_list <- format_chemical_properties(chemical_list))
   object$chemical_list <- chemical_list
@@ -273,11 +214,7 @@ remove_excluded_chemicals <- function(object, project_path){
   if(!all(unique(chemical_list$EXCLUDE) == 1, na.rm = TRUE)) {
     stop("Only NA or 1 is allowed in the exclusion filter. Check the exclusion list and re-run the workflow.")
   }
-  #inclusion_list <- as.integer(chemical_list[, chemical_list[is.na(EXCLUDE)]]$cas_number)
   inclusion_list <- chemical_list %>% filter(is.na(EXCLUDE)) %>% pull(cas_number)
-
-  # exclusion_list <- chemical_list[chemical_list[, EXCLUDE %like% 1]]$cas_number
-
   exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
 
   object$mortality_removed_chemicals <- tibble(data.table(object$results_filtered) %>% filter(cas_number %in% exclusion_list))
@@ -525,7 +462,7 @@ export_chemical_properties <- function(object, database_path = database_path,
 create_chemical_properties <- function(database_path){
   if (file.exists(file.path(database_path,"chemical_properties.csv"))){
     message("[EcoToxR]:  Reading chemical properties (this is a custom file).")
-    object <- fread(file.path(database_path,"chemical_properties.csv"), sep = ",", dec = ".", na.strings = c("NA", "", NA, NaN))
+    object <- read_csv(file.path(database_path,"chemical_properties.csv"), na = c("NA", "", NA, NaN), show_col_types = FALSE)
     object <- format_chemical_properties(object)
 
   } else {
@@ -533,17 +470,14 @@ create_chemical_properties <- function(database_path){
     message("[EcoToxR]:  A custom file for the storage of chemical properties (mol weight) is compiled.")
     message("[EcoToxR]:  The file is stored in the current database folder and will be copied to the project folder for backup.")
     object <- data.table(matrix(nrow = 0, ncol = 32))
-    colnames(object) <- c("cas_number", "cas", "chemical_name", "FOUND_BY", "DTXSID", "PREFERRED_NAME",
-                          "CASRN", "INCHIKEY", "IUPAC_NAME", "SMILES", "INCHI_STRING", "MOLECULAR_FORMULA",
-                          "AVERAGE_MASS", "MONOISOTOPIC_MASS", "MS_READY_SMILES", "QSAR_READY_SMILES",
-                          "OPERA_LOG_P", "OPERA_LOG_P_AD", "OPERA_LOG_D_74",
-                          "OPERA_LOG_D_AD", "OPERA_LOG_S_74", "OPERA_LOG_S_AD",
-                          "ACD_LOG_P", "ACD_LOG_D_74", "ACD_LOG_S_74",
-                          "JC_LOG_P", "JC_LOG_S_74", "JC_LOG_D_74", "EXCLUDE", "REMARKS"
+    colnames(object) <- c("cas_number", "cas", "chemical_name", "FOUND_BY", "DTXSID", "CID", "PREFERRED_NAME",
+                          "CASRN", "INCHIKEY", "IUPAC_NAME", "SMILES", "INCHI_STRING", "MS_READY_SMILES", "QSAR_READY_SMILES",
+                          "MOLECULAR_FORMULA", "AVERAGE_MASS", "MONOISOTOPIC_MASS", "QC_LEVEL",
+                          "LOG_S", "LOG_S_AD", "LOG_S_COMMENT", "EXCLUDE", "REMARKS"
                           )
     object <- format_chemical_properties(object)
     suppressWarnings(
-      fwrite(object,suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), sep = ",", dec = ".", na = NA)
+      write_csv(object, suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), na = "NA")
     )
 
   }
@@ -556,6 +490,7 @@ format_chemical_properties <- function(object){
       object$chemical_name <- as.character(object$chemical_name)
       object$FOUND_BY <-  as.character(object$FOUND_BY)
       object$DTXSID <- as.character(object$DTXSID)
+      object$CID <- as.integer(object$CID)
       object$PREFERRED_NAME <- as.character(object$PREFERRED_NAME)
       object$CASRN <- as.character(object$CASRN)
       object$INCHIKEY <- as.character(object$INCHIKEY)
@@ -567,18 +502,10 @@ format_chemical_properties <- function(object){
       suppressWarnings(object$MONOISOTOPIC_MASS <- as.numeric(object$MONOISOTOPIC_MASS))
       object$MS_READY_SMILES <- as.character(object$MS_READY_SMILES)
       object$QSAR_READY_SMILES <- as.character(object$QSAR_READY_SMILES)
-      object$OPERA_LOG_P <- as.numeric(object$OPERA_LOG_P)
-      object$OPERA_LOG_P_AD <- as.numeric(object$OPERA_LOG_P_AD)
-      object$OPERA_LOG_D_74 <- as.numeric(object$OPERA_LOG_D_74)
-      object$OPERA_LOG_D_AD <- as.numeric(object$OPERA_LOG_D_AD)
-      object$OPERA_LOG_S_74 <- as.numeric(object$OPERA_LOG_S_74)
-      object$OPERA_LOG_S_AD <- as.numeric(object$OPERA_LOG_S_AD)
-      object$ACD_LOG_P <- as.numeric(object$ACD_LOG_P)
-      object$ACD_LOG_D_74 <- as.numeric(object$ACD_LOG_D_74)
-      object$ACD_LOG_S_74 <- as.numeric(object$ACD_LOG_S_74)
-      object$JC_LOG_P <- as.numeric(object$JC_LOG_P)
-      object$JC_LOG_D_74 <- as.numeric(object$JC_LOG_D_74)
-      object$JC_LOG_S_74 <- as.numeric(object$JC_LOG_S_74)
+      object$QC_LEVEL <- as.integer(object$QC_LEVEL)
+      object$LOG_S <- as.numeric(object$LOG_S_AD)
+      object$LOG_S_AD <- as.integer(object$LOG_S_AD)
+      object$LOG_S_COMMENT <- as.character(object$LOG_S_COMMENT)
       object$EXCLUDE <- as.numeric(object$EXCLUDE)
       object$REMARKS <- as.character(object$REMARKS)
   return(object)
