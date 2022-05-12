@@ -24,22 +24,27 @@ create_project <- function(database_path, project_path, initalise_database_proje
     message("[EcoToxR]:  Read the Ecotox Knowledgebase ASCII files.")
     suppressWarnings({
       message("[EcoToxR]:  Read tests")
-      object$tests <- read_delim(project$files[grep("tests.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$tests <- read_delim(project$files[grep("tests.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"",
+                                 show_col_types = TRUE)
 
       message("[EcoToxR]:  Read chemicals.")
-      object$chemicals <- read_delim(project$files[grep("chemicals.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$chemicals <- read_delim(project$files[grep("chemicals.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"),
+                                     quote = "\"", show_col_types = TRUE)
 
       object$chemprop <- dplyr::tibble(create_chemical_properties(project$database_path))
 
       message("[EcoToxR]:  Read species.")
-      object$species <- read_delim(project$files[grep("species.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$species <- read_delim(project$files[grep("species.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"),
+                                   quote = "\"", show_col_types = TRUE)
 
       message("[EcoToxR]:  Read results.")
       #object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
-      object$results <- read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$results <- read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"),
+                                   quote = "\"", show_col_types = TRUE))
 
       message("[EcoToxR]:  Read references.")
-      object$references <- read_delim(project$files[grep("references.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$references <- read_delim(project$files[grep("references.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"),
+                                      quote = "\"", show_col_types = TRUE))
     })
 
     #  Trim lists
