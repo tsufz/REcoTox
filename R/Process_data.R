@@ -291,9 +291,9 @@
         stop("[EcoToxR]:  Only 0 or 1 is allowed in the endpoint selection filter. Check the endpoint selection list and re-run the workflow.")
     }
 
-    if(unique(endpoints$include_endpoint) == 0) {
-        stop("[EcoToxR]:  There are only 0 in the endpoint selection filter. Check the species selection list and re-run the workflow.")
-    }
+    #if(unique(endpoints$include_endpoint)[[1]] == 0) {
+    #    stop("[EcoToxR]:  There are only 0 in the endpoint selection filter. Check the species selection list and re-run the workflow.")
+    #}
 
     object$results_filtered <- object$results_filtered %>%
       left_join(endpoints %>% select(include_endpoint, endpoint), by = "endpoint") %>%
@@ -357,7 +357,10 @@
     }
 
     if(object$state == 3){
+
+      # This routine just exports an exclusion and inclusion list, but does not remove chemicals from chemical list
       object <- remove_excluded_chemicals(object, project$project_path)
+
       if(update_chemicals == TRUE){
         object <- update_chemical_list(object, project_path = project_path, database_path = database_path)
       }
