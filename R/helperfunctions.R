@@ -9,38 +9,37 @@ build_final_list <- function(object = object){
   }
 
 
-  results <- results %>% select("cas_number", "cas", "chemical_name", "compound_class", "test_location", "conc1_type", "conc1_mean_op",
-                      "conc1_mean", "conc1_min_op", "conc1_min", "conc1_max_op", "conc1_max", "conc1_unit",
-                      "conc1_comments", "concentration_mean", "concentration_unit", "obs_duration_mean",
-                      "obs_duration_unit", "test_id", "reference_number", "endpoint", "endpoint_comments", "effect",
-                      "effect_comments", "measurement", "measurement_comments", "organism_lifestage", "common_name", "latin_name", "kingdom",
-                      "phylum_division", "subphylum_div", "superclass", "class", "tax_order", "family", "genus", "species", "subspecies",
-                      "variety", "ecotox_group", "result_id", "reference_db", "reference_type", "author",
-                      "title", "source", "publication_year", "include_endpoint", "include_species")
+  results <- results %>% select(cas_number, cas, chemical_name, compound_class, test_location, conc1_type, conc1_mean_op,
+                      conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max, conc1_unit,
+                      conc1_comments, concentration_mean, concentration_unit, obs_duration_mean,
+                      obs_duration_unit, test_id, reference_number, endpoint, endpoint_comments, effect,
+                      effect_comments, measurement, measurement_comments, organism_lifestage, common_name, latin_name, kingdom,
+                      phylum_division, subphylum_div, superclass, class, tax_order, family, genus, species, subspecies,
+                      variety, ecotox_group, result_id, reference_db, reference_type, author,
+                      title, source, publication_year, include_endpoint, include_species)
 
 
-  results <- results %>% left_join(object$chemprop %>% select("cas_number", "DTXSID", "PREFERRED_NAME", "CASRN", "SMILES",
-                                                  "INCHIKEY", "MOLECULAR_FORMULA", "AVERAGE_MASS",
-                                                  "MONOISOTOPIC_MASS", "LOG_S", "LOG_S_AD",
-                                                  "LOG_S_COMMENT", "EXCLUDE", "REMARKS"),
-                                                  by = "cas_number")
+  results <- results %>% left_join(object$chemprop %>% select(cas_number, CID, DTXSID, PREFERRED_NAME, CASRN, SMILES, QSAR_READY_SMILES,
+                                                  INCHIKEY, MOLECULAR_FORMULA, AVERAGE_MASS,
+                                                  MONOISOTOPIC_MASS, LOG_S, LOG_S_AD,
+                                                  LOG_S_COMMENT, EXCLUDE, REMARKS),
+                                                  by = "cas_number"
   )
 
   # reorder list
 
-  results <- results %>% select("EXCLUDE", "REMARKS", "cas_number", "cas", "DTXSID", "CID", "PREFERRED_NAME", "test_location",
-                                "reference_number",
-                                "conc1_type", "conc1_mean_op", "conc1_mean", "conc1_min_op", "conc1_min", "conc1_max_op", "conc1_max",
-                                "conc1_unit", "conc1_comments", "concentration_mean", "concentration_unit", "test_id",
-                                "endpoint", "endpoint_comments", "effect", "effect_comments",
-                                "measurement", "measurement_comments", "obs_duration_mean",
-                                "obs_duration_unit", "organism_lifestage", "common_name", "latin_name", "kingdom",
-                                "phylum_division", "subphylum_div", "superclass", "class", "tax_order", "family",
-                                "genus", "species", "subspecies", "variety", "ecotox_group", "chemical_name",
-                                "compound_class", "CASRN", "SMILES", "INCHIKEY", "MS_READY_SMILES",
-                                "QSAR_READY_SMILES", "MOLECULAR_FORMULA", "AVERAGE_MASS",
-                                "MONOISOTOPIC_MASS", "LOG_S", "LOG_S_AD", "LOG_S_COMMENT", "reference_db", "result_id", "reference_type",
-                                "author", "title", "source", "publication_year", "include_endpoint", "include_species")
+  results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID, DTXSID, PREFERRED_NAME, test_location,
+                                reference_number,
+                                conc1_type, conc1_mean_op, conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max,
+                                conc1_unit, conc1_comments, concentration_mean, concentration_unit, test_id,
+                                endpoint, endpoint_comments, effect, effect_comments,
+                                measurement, measurement_comments, obs_duration_mean,
+                                obs_duration_unit, organism_lifestage, common_name, latin_name, kingdom,
+                                phylum_division, subphylum_div, superclass, class, tax_order, family,
+                                genus, species, subspecies, variety, ecotox_group, chemical_name,
+                                compound_class, CASRN, SMILES, INCHIKEY, QSAR_READY_SMILES, MOLECULAR_FORMULA, AVERAGE_MASS,
+                                MONOISOTOPIC_MASS, LOG_S, LOG_S_AD, LOG_S_COMMENT, reference_db, result_id, reference_type,
+                                author, title, source, publication_year, include_endpoint, include_species)
   object$results <- results
   return(object)
 }
@@ -53,7 +52,10 @@ calculate_hours <- function(object = object){
   results_h <- results %>% filter(obs_duration_unit == "h")
   results_d <- results %>% filter(obs_duration_unit == "d")
 
-  results_d <- results_d %>% filter(obs_duration_unit == "d") %>% mutate(obs_duration_mean = 24 * obs_duration_mean) %>% mutate(obs_duration_unit = "h")
+  results_d <- results_d %>%
+      filter(obs_duration_unit == "d") %>%
+      mutate(obs_duration_mean = 24 * obs_duration_mean) %>%
+      mutate(obs_duration_unit = "h")
 
   results <- tibble(rbind(results_h, results_d))
 
@@ -71,7 +73,10 @@ calculate_water_solubility <- function(object = object){
   results <- object$results
 
   # Calculate S in mg/L
-  results <- results %>% rowwise() %>% mutate(LOG_S_mg_L = 10^LOG_S_74 * AVERAGE_MASS * 1000) %>% filter(is.na(EXCLUDE)) # OPERA output g/L
+  results <- results %>%
+      rowwise() %>%
+      mutate(S_mg_L = 10^LOG_S * AVERAGE_MASS * 1000) %>%
+      filter(is.na(EXCLUDE)) # OPERA output g/L
 
   # Domain estimate solubility domain (based on ideas in ChemProp)
   # Case 1: if EC <= Sw -> 3
@@ -93,20 +98,21 @@ calculate_water_solubility <- function(object = object){
 
 # Opera
 #
-  results <- results %>% mutate(LOG_S_mg_L_AD = NA)
+  results <- results %>%
+      mutate(S_mg_L_AD = NA)
   results <- results %>%
       rowwise() %>%
       mutate(
 
-          LOG_S_mg_L_AD = case_when(
+          S_mg_L_AD = case_when(
 
-              is.na(EXCLUDE) & concentration_mean <= LOG_S_mg_L ~ 3,
+              is.na(EXCLUDE) & concentration_mean <= S_mg_L ~ 3,
 
-              is.na(EXCLUDE) & concentration_mean > LOG_S_mg_L & concentration_mean <= 10^5 * log10(LOG_S_mg_L) ~ 2,
+              is.na(EXCLUDE) & concentration_mean > S_mg_L & concentration_mean <= 10^5 * log10(S_mg_L) ~ 2,
 
-              is.na(EXCLUDE) & concentration_mean > LOG_S_mg_L & concentration_mean > 10^5 * log10(LOG_S_mg_L) & concentration_mean <= 10^10 * log10(LOG_S_mg_L) ~ 1,
+              is.na(EXCLUDE) & concentration_mean > S_mg_L & concentration_mean > 10^5 * log10(S_mg_L) & concentration_mean <= 10^10 * log10(S_mg_L) ~ 1,
 
-              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(LOG_S_mg_L) ~ 0
+              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(S_mg_L) ~ 0
 
           )
       )
@@ -172,16 +178,24 @@ export_chemical_list <- function(object, project_path){
   message("[EcoToxR]:  Check the file for exclusion of chemicals.")
   message("[EcoToxR]:  Impute missing values for physical-chemical properties.")
   message(paste0("[EcoToxR]:  Edit the file ", tolower(object$parameters$ecotoxgroup), "_chemical_list.csv and re-run the workflow."))
-  chemical_list <- object$results_filtered %>% select(cas_number, cas, chemical_name) %>% unique()
-  chemical_list <- object$results_filtered %>% select(cas_number, cas, chemical_name) %>% unique() %>%
-      left_join(object$chemprop %>% select(cas_number, FOUND_BY, DTXSID, CID, PREFERRED_NAME, CASRN, INCHIKEY,
+
+  chemical_list <- object$results_filtered %>%
+      select(cas_number, cas, chemical_name) %>%
+      unique()
+
+  chemical_list <- object$results_filtered %>%
+      select(cas_number, cas, chemical_name) %>%
+      unique() %>%
+      left_join(object$chemprop %>% select(cas_number, CID, FOUND_BY, DTXSID, PREFERRED_NAME, CASRN, INCHIKEY,
                                            IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA, AVERAGE_MASS,
-                                           MONOISOTOPIC_MASS, QSAR_READY_SMILES, LOG_S, LOG_S_AD, LOG_S_COMMENT,
+                                           MONOISOTOPIC_MASS, QSAR_READY_SMILES, QC_LEVEL, LOG_S, LOG_S_AD, LOG_S_COMMENT,
                                            EXCLUDE, REMARKS),
                 by = "cas_number") %>%
       arrange(FOUND_BY)
 
-  write_csv(x = chemical_list, file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")))), col_names = TRUE)
+  write_csv(x = chemical_list,
+            file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")))),
+            col_names = TRUE)
 }
 
 export_exclude_list <- function(object, project_path){
@@ -205,7 +219,7 @@ export_exclude_list <- function(object, project_path){
 remove_excluded_chemicals <- function(object, project_path){
 
   chemical_list <- read_csv(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")),
-                            na = c("NA", "", NA, NaN))
+                            na = c("NA", "", NA, NaN, "N/A"), show_col_types = FALSE)
 
   suppressWarnings(chemical_list <- format_chemical_properties(chemical_list))
   object$chemical_list <- chemical_list
@@ -214,11 +228,19 @@ remove_excluded_chemicals <- function(object, project_path){
   if(!all(unique(chemical_list$EXCLUDE) == 1, na.rm = TRUE)) {
     stop("Only NA or 1 is allowed in the exclusion filter. Check the exclusion list and re-run the workflow.")
   }
-  inclusion_list <- chemical_list %>% filter(is.na(EXCLUDE)) %>% pull(cas_number)
-  exclusion_list <- chemical_list %>% filter(EXCLUDE == 1) %>% pull(cas_number)
+  inclusion_list <- chemical_list %>%
+      filter(is.na(EXCLUDE)) %>%
+      pull(cas_number)
 
-  object$mortality_removed_chemicals <- tibble(data.table(object$results_filtered) %>% filter(cas_number %in% exclusion_list))
-  object$results_filtered <- tibble(data.table(object$results_filtered) %>% filter(cas_number %in% inclusion_list))
+  exclusion_list <- chemical_list %>%
+      filter(EXCLUDE == 1) %>%
+      pull(cas_number)
+
+  object$mortality_removed_chemicals <- tibble(data.table(object$results_filtered) %>%
+                                                   filter(cas_number %in% exclusion_list))
+
+  object$results_filtered <- tibble(data.table(object$results_filtered) %>%
+                                        filter(cas_number %in% inclusion_list))
 
   write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
 
@@ -400,8 +422,12 @@ query_pubchem <- function(object = object) {
 
 
     # add comments and exclude those entries with remaining gaps
-    chemical_list <- chemical_list %>% mutate(EXCLUDE = ifelse(FOUND_BY == "No data retrieved from PubChem", 1, EXCLUDE),
-                                              REMARKS = ifelse(FOUND_BY == "No data retrieved from PubChem", "no data", REMARKS))
+    chemical_list <- chemical_list %>% mutate(EXCLUDE = if_else(condition = FOUND_BY == "No data retrieved from PubChem",
+                                                                true = 1,
+                                                                false = EXCLUDE),
+                                              REMARKS = if_else(condition = FOUND_BY == "No data retrieved from PubChem",
+                                                                true = "no data",
+                                                                false = REMARKS))
 
 
 }
@@ -440,7 +466,7 @@ update_chemical_list <- function(object = object, project_path = project_path, d
   }
 
 chemprop <- data.table(chemprop)
-chemprop[,(col_names2) := NULL]
+chemprop[, (col_names2) := NULL]
 export_chemical_properties(object = chemprop, database_path = database_path, project_path = project_path)
 object$chemprop <- tibble(chemprop)
 
@@ -454,30 +480,52 @@ export_chemical_properties <- function(object, database_path = database_path,
   object <- format_chemical_properties(object)
   object <- tibble(object)
 
-  write_csv(object, suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), na = "NA")
-  write_csv(object, suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), na = "NA")
+  write_csv(x = object, file = suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), na = "NA")
+  write_csv(x = object, file = suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), na = "NA")
 
 }
 
 create_chemical_properties <- function(database_path){
-  if (file.exists(file.path(database_path,"chemical_properties.csv"))){
+  if (file.exists(file.path(database_path, "chemical_properties.csv"))){
     message("[EcoToxR]:  Reading chemical properties (this is a custom file).")
-    object <- read_csv(file.path(database_path,"chemical_properties.csv"), na = c("NA", "", NA, NaN), show_col_types = FALSE)
+    object <- read_csv(file = file.path(database_path, "chemical_properties.csv"), na = c("NA", "", NA, NaN), show_col_types = FALSE)
     object <- format_chemical_properties(object)
 
   } else {
 
     message("[EcoToxR]:  A custom file for the storage of chemical properties (mol weight) is compiled.")
     message("[EcoToxR]:  The file is stored in the current database folder and will be copied to the project folder for backup.")
-    object <- data.table(matrix(nrow = 0, ncol = 32))
-    colnames(object) <- c("cas_number", "cas", "chemical_name", "FOUND_BY", "DTXSID", "CID", "PREFERRED_NAME",
-                          "CASRN", "INCHIKEY", "IUPAC_NAME", "SMILES", "INCHI_STRING", "MS_READY_SMILES", "QSAR_READY_SMILES",
-                          "MOLECULAR_FORMULA", "AVERAGE_MASS", "MONOISOTOPIC_MASS", "QC_LEVEL",
-                          "LOG_S", "LOG_S_AD", "LOG_S_COMMENT", "EXCLUDE", "REMARKS"
-                          )
-    object <- format_chemical_properties(object)
+
+    object <- tibble(
+        "cas_number" = integer(),
+        "cas" = character(),
+        "chemical_name" = character(),
+        "CID" = integer(),
+        "FOUND_BY" = character(),
+        "DTXSID" = character(),
+        "PREFERRED_NAME" = character(),
+        "CASRN" = character(),
+        "INCHIKEY"  = character(),
+        "IUPAC_NAME" = character(),
+        "SMILES" = character(),
+        "INCHI_STRING" = character(),
+        "QSAR_READY_SMILES" = character(),
+        "MOLECULAR_FORMULA" = character(),
+        "AVERAGE_MASS" = numeric(),
+        "MONOISOTOPIC_MASS" = numeric(),
+        "QC_LEVEL" = integer(),
+        "LOG_S" = numeric(),
+        "LOG_S_AD" = integer(),
+        "LOG_S_COMMENT" = character(),
+        "EXCLUDE" = integer(),
+        "REMARKS" = character()
+    )
+
+    # object <- format_chemical_properties(object)
     suppressWarnings(
-      write_csv(object, suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))), na = "NA")
+      write_csv(x = object, file = suppressWarnings(normalizePath(file.path(database_path, "chemical_properties.csv"))),
+                na = "NA",
+                col_names = TRUE)
     )
 
   }
@@ -500,10 +548,9 @@ format_chemical_properties <- function(object){
       object$MOLECULAR_FORMULA <- as.character(object$MOLECULAR_FORMULA)
       suppressWarnings(object$AVERAGE_MASS <- as.numeric(object$AVERAGE_MASS))
       suppressWarnings(object$MONOISOTOPIC_MASS <- as.numeric(object$MONOISOTOPIC_MASS))
-      object$MS_READY_SMILES <- as.character(object$MS_READY_SMILES)
       object$QSAR_READY_SMILES <- as.character(object$QSAR_READY_SMILES)
       object$QC_LEVEL <- as.integer(object$QC_LEVEL)
-      object$LOG_S <- as.numeric(object$LOG_S_AD)
+      object$LOG_S <- as.numeric(object$LOG_S)
       object$LOG_S_AD <- as.integer(object$LOG_S_AD)
       object$LOG_S_COMMENT <- as.character(object$LOG_S_COMMENT)
       object$EXCLUDE <- as.numeric(object$EXCLUDE)
@@ -528,7 +575,9 @@ export_mol_units <- function(object, project_path = project$project_path) {
 
   if(nrow(object$chemprop) > 0) {
 
-      chemprop <- chemprop %>% left_join(object$chemprop %>% select(1, 4:21), by = "cas_number")
+      chemprop <- chemprop %>%
+          left_join(object$chemprop %>%
+                        select(1, 4:ncol(object$chemprop)), by = "cas_number")
       }
 
   chemprop$AVERAGE_MASS.x <- NULL
@@ -540,9 +589,13 @@ export_mol_units <- function(object, project_path = project$project_path) {
 
   chemprop <- chemprop[order(chemprop$chemical_name), ]
 
-  chemprop <- chemprop %>% group_by(cas_number) %>% unique()
+  chemprop <- chemprop %>%
+      group_by(cas_number) %>%
+      unique()
 
-  chemprop <- chemprop %>% group_by(FOUND_BY) %>% arrange(desc(FOUND_BY))
+  chemprop <- chemprop %>%
+      group_by(FOUND_BY) %>%
+      arrange(desc(FOUND_BY))
 
   write_csv(x = chemprop, file = file_name, col_names = TRUE)
 
@@ -554,7 +607,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
   ecotoxgroup <- object$parameters$ecotoxgroup
   file_name <- file.path(project_path, paste0(tolower(ecotoxgroup), "_mol_weight.csv"))
 
-  chemprop <- read_csv(file = file_name, col_names = TRUE, na = c("NA", "", NA, NaN), show_col_types = FALSE)
+  chemprop <- read_csv(file = file_name, col_names = TRUE, na = c("NA", "", NA, NaN, "N/A", "n/a"), show_col_types = FALSE)
 
   # chemprop <- format_chemical_properties(chemprop)
 
@@ -575,7 +628,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
 
   #message("[EcoToxR]: Update the chemical properties.")
 
-  object$chemprop <- object$chemprop[data.table(chemprop), on = c("cas_number"), AVERAGE_MASS := i.AVERAGE_MASS]
+  object$chemprop <- tibble(data.table(object$chemprop)[data.table(chemprop), on = c("cas_number"), AVERAGE_MASS := i.AVERAGE_MASS])
 
   object$chemprop <- object$chemprop %>% mutate_all(na_if, "")
 
@@ -597,7 +650,9 @@ convert_units <- function(object, sample_size = NA) {
   object <- rbind(object %>% filter(!is.na(concentration_mean)),
                   object %>% filter(is.na(concentration_mean)) %>%
                       rowwise() %>%
-                      mutate(concentration_mean = ifelse(is.na(concentration_mean), mean(c(conc1_min, conc1_max)), concentration_mean))
+                      mutate(concentration_mean = if_else(condition = is.na(concentration_mean),
+                                                          true = mean(c(conc1_min, conc1_max)),
+                                                          false = concentration_mean))
   )
 
 #
@@ -630,8 +685,12 @@ convert_units <- function(object, sample_size = NA) {
 
   if (nrow(object %>% filter(endpoint %like% log)) > 0) {endpoint
 
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(endpoint %like% log, 10^concentration_mean, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(endpoint = ifelse(concentration_unit %like% log, "LC50", endpoint))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = endpoint %like% log,
+                                                                             true = 10^concentration_mean,
+                                                                             false= concentration_mean))
+      object <- object %>% rowwise() %>% mutate(endpoint = if_else(condition = concentration_unit %like% log,
+                                                                   true = "LC50",
+                                                                   false = endpoint))
 
   }
 
@@ -641,8 +700,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% pg)) > 0) {
 
       message("[EcoToxR]:  Converting pg/L like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% pg, concentration_mean / 1e+09, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% pg, "mg/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% pg,
+                                                                             true = concentration_mean / 1e+09,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% pg,
+                                                                             true = "mg/L",
+                                                                             false = concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping pg/L like units")}
 
@@ -653,8 +716,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% ng)) > 0) {
 
       message("[EcoToxR]:  Converting ng/L like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% ng, concentration_mean / 1e+06, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% ng, "mg/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% ng,
+                                                                             true = concentration_mean / 1e+06,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% ng,
+                                                                             true ="mg/L",
+                                                                             false =concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping ng/L like units")}
 
@@ -664,8 +731,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% ug)) > 0) {
 
       message("[EcoToxR]:  Converting ug/L like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% ug, concentration_mean / 1e+03, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% ug, "mg/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% ug,
+                                                                             true = concentration_mean / 1e+03,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% ug,
+                                                                             true = "mg/L",
+                                                                             false = concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping ug/L like units")}
 
@@ -676,8 +747,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% g)) > 0) {
 
       message("[EcoToxR]:  Converting g/L like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% g, concentration_mean * 1e+03, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% g, "mg/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% g,
+                                                                             true = concentration_mean * 1e+03,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% g,
+                                                                             true = "mg/L",
+                                                                             false = concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping g/L like units")}
 
@@ -685,7 +760,9 @@ convert_units <- function(object, sample_size = NA) {
   # mg/L
   message("[EcoToxR]:  Converting mg/L like units")
   mg <- "(^(|((A|a)(I|E|i|e)) )mg/(l|L|dm3)$)|^ppm$|(^(|((A|a)(I|E|i|e)) )ug/m(l|L|m3)$)|^g/m3$"
-  object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% mg, "mg/L", concentration_unit))
+  object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% mg,
+                                                                         true = "mg/L",
+                                                                         false = concentration_unit))
 
   #pmol related
   pmol <- "(^(|(A|a)(I|E|i|e) )pmol/(l|L)$)"
@@ -693,8 +770,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% pmol)) > 0) {
 
       message("[EcoToxR]:  Converting pmol like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% pmol, concentration_mean / 1e+12, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% pmol, "mol/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% pmol,
+                                                                             true = concentration_mean / 1e+12,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% pmol,
+                                                                            true = "mol/L",
+                                                                            false = concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping pmol/L like units")}
 
@@ -704,8 +785,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% nmol)) > 0) {
 
       message("[EcoToxR]:  Converting nmol like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% nmol, concentration_mean / 1e+09, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% nmol, "mol/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% nmol,
+                                                                             true = concentration_mean / 1e+09,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% nmol,
+                                                                             true = "mol/L",
+                                                                             false = concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping nmol/L like units")}
 
@@ -715,8 +800,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% umol)) > 0) {
 
       message("[EcoToxR]:  Converting pmol like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% umol, concentration_mean / 1e+06, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% umol, "mol/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% umol,
+                                                                             true = concentration_mean / 1e+06,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% umol,
+                                                                             true = "mol/L",
+                                                                             false = concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping umol/L like units")}
 
@@ -726,8 +815,12 @@ convert_units <- function(object, sample_size = NA) {
   if (nrow(object %>% filter(concentration_unit %like% mmol)) > 0) {
 
       message("[EcoToxR]:  Converting mmol like units")
-      object <- object %>% rowwise() %>% mutate(concentration_mean = ifelse(concentration_unit %like% mmol, concentration_mean / 1e+03, concentration_mean))
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% mmol, "mol/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = concentration_unit %like% mmol,
+                                                                             true = concentration_mean / 1e+03,
+                                                                             false = concentration_mean))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% mmol,
+                                                                             true = "mol/L",
+                                                                             false = concentration_unit))
 
   } else {message("[EcoToxR]:  Skipping mmol/L like units")}
 
@@ -737,7 +830,9 @@ convert_units <- function(object, sample_size = NA) {
 
   if (nrow(object %>% filter(concentration_unit %like% mol)) > 0) {
       message("[EcoToxR]:  Converting mol like units")
-      object <- object %>% rowwise() %>% mutate(concentration_unit = ifelse(concentration_unit %like% mol, "mol/L", concentration_unit))
+      object <- object %>% rowwise() %>% mutate(concentration_unit = if_else(condition = concentration_unit %like% mol,
+                                                                             true = "mol/L",
+                                                                             false = concentration_unit))
   } else {message("[EcoToxR]:  Skipping mol/L like units")}
 
 
@@ -781,6 +876,8 @@ save_project <- function(object = object, save_project_steps = save_project_step
   if(isTRUE(save_project_steps)){
     project <- object
     message("[EcoToxR]:  Saving the project state.")
-    save(project,file = file.path(project_path, paste0(tolower(ecotoxgroup), "_state", state, ".RData")), compress = TRUE)
+    save(project,
+         file = file.path(project_path, paste0(tolower(ecotoxgroup), "_state", state, ".RData")),
+         compress = TRUE)
   }
 }
