@@ -3,7 +3,7 @@ library(progress)
 library(tidyverse)
 library(data.table)
 
-chemical_list <- read_csv("c:/TEMP/EcoToxDB/current/chemical_properties.csv")
+chemical_list <- read_csv("c:/TEMP/EcoToxDB/test/algae_chemical_list.csv")
 
 length_progressbar <- nrow(chemical_list)
 pb <- progress::progress_bar$new(
@@ -14,7 +14,7 @@ for (i in 1:nrow(chemical_list)){
 
     pb$tick()
 
-
+    if (is.na(chemical_list$CID[i])){
     # lookup for CID based on CASRN
     casrn <- chemical_list[i, "CASRN"][[1]]
     pccid <- get_cid(casrn)
@@ -30,13 +30,19 @@ for (i in 1:nrow(chemical_list)){
         pccid <- pccid %>% arrange(cid)
         pccid <- pccid %>% slice_min(cid, n = 1)
 
-    } else  {}
+    }
 
 
     chemical_list[i, "CID"] <- pccid[[2]]
+
+    # write_csv(chemical_list, "c:/TEMP/EcoToxDB/test/algae_chemical_list.csv")
+
+    } else {
+        next()
+    }
 
 }
 
 
 
-write_csv(chemical_list, "c:/temp/EcoToxDB/chemical_properties_update.csv")
+write_csv(chemical_list, "c:/TEMP/EcoToxDB/test/algae_chemical_list_update.csv")
