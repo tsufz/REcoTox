@@ -236,16 +236,14 @@ remove_excluded_chemicals <- function(object, project_path){
       filter(EXCLUDE == 1) %>%
       pull(cas_number)
 
-  object$mortality_removed_chemicals <- tibble(data.table(object$results_filtered) %>%
-                                                   filter(cas_number %in% exclusion_list))
+  object$results_excluded_by_chemical <- object$results_filtered %>% group_by(cas_number) %>% filter(cas_number %in% exclusion_list)
 
-  object$results_filtered <- tibble(data.table(object$results_filtered) %>%
-                                        filter(cas_number %in% inclusion_list))
+  object$results_filtered <- object$results_filtered  %>% group_by(cas_number) %>% filter(cas_number %in% inclusion_list)
 
-  write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed.csv")))
+  write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_included_by_chemical.csv")))
 
-  if(length(object$exclusion_list) > 0){
-    write_csv(object$mortality_removed_chemicals, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_processed_excluded.csv")))))
+  if(object$results_excluded_by_chemical %>% nrow() > 0){
+    write_csv(object$results_excluded, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_excluded_by_chemical.csv")))), na = "NA")
   }
   return(object)
 }
@@ -437,6 +435,10 @@ update_chemical_list <- function(object = object, project_path = project_path, d
   # some kind dirty solution...
   #object$chemprop <- object$chemprop[chemprop, on = c("cas_number"), AVERAGE_MASS := i.AVERAGE_MASS]
   #object$chemprop <- object$chemprop %>% mutate_all(na_if,"")
+  #
+
+  chemical_list_extended <- read_csv(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_chemical_list.csv")),
+                              na = c("NA", "", NA, NaN, "N/A"), show_col_types = FALSE)
 
   chemprop <- data.table(object$chemprop)
   chemical_list <- data.table(object$chemical_list)
