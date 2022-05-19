@@ -3,7 +3,7 @@ library(progress)
 library(tidyverse)
 library(data.table)
 
-chemical_list <- read_csv("d:/chemical_properties.csv")
+chemical_list <- read_csv("C:/TEMP/EcoToxDB/test/pubchem.csv", na = c("N/A", "NA", NA))
 
 # Split the list in entries with smiles and w/o smiles
 chemical_list_SMILES <- chemical_list %>% filter(!is.na(SMILES))
@@ -184,4 +184,4 @@ chemical_list <- chemical_list %>% mutate(EXCLUDE = ifelse(FOUND_BY == "No data 
                                           REMARKS = ifelse(FOUND_BY == "No data retrieved from PubChem", "no data", REMARKS))
 
 
-write_csv(chemical_list, "d:/chemical_properties_update.csv")
+write_csv(chemical_list, "C:/TEMP/EcoToxDB/test/pubchem_updated.csv")
