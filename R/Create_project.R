@@ -9,7 +9,7 @@ require(tidyverse)
 require(data.table)
 
 create_project <- function(database_path, project_path, initalise_database_project = FALSE,
-                           initalise_project = FALSE, load_default = FALSE){
+                           initalise_project = FALSE, load_default = FALSE) {
 
   # initialise a new basic project, otherwise just load and update the project file
   if (initalise_database_project == TRUE) {
@@ -24,22 +24,40 @@ create_project <- function(database_path, project_path, initalise_database_proje
     message("[EcoToxR]:  Read the Ecotox Knowledgebase ASCII files.")
     suppressWarnings({
       message("[EcoToxR]:  Read tests")
-      object$tests <- read_delim(project$files[grep("tests.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$tests <- read_delim(file = project$files[grep("tests.txt", project$files)],
+                                 delim = "|", na = c("NA","","NR","--","NC","/"),
+                                 quote = "\"",
+                                 show_col_types = FALSE)
 
       message("[EcoToxR]:  Read chemicals.")
-      object$chemicals <- read_delim(project$files[grep("chemicals.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$chemicals <- read_delim(file = project$files[grep("chemicals.txt", project$files)],
+                                     delim = "|", na = c("NA","","NR","--","NC","/"),
+                                     quote = "\"",
+                                     show_col_types = FALSE)
 
-      object$chemprop <- dplyr::tibble(create_chemical_properties(project$database_path))
+      object$chemprop <- tibble(create_chemical_properties(project$database_path))
 
       message("[EcoToxR]:  Read species.")
-      object$species <- read_delim(project$files[grep("species.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$species <- read_delim(file = project$files[grep("species.txt", project$files)],
+                                   delim = "|",
+                                   na = c("NA","","NR","--","NC","/"),
+                                   quote = "\"",
+                                   show_col_types = FALSE)
 
       message("[EcoToxR]:  Read results.")
       #object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
-      object$results <- read_delim(project$files[grep("results.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$results <- read_delim(file = project$files[grep("results.txt", project$files)],
+                                   delim = "|",
+                                   na = c("NA","","NR","--","NC","/"),
+                                   quote = "\"",
+                                   show_col_types = FALSE)
 
       message("[EcoToxR]:  Read references.")
-      object$references <- read_delim(project$files[grep("references.txt", project$files)], delim = "|", na = c("NA","","NR","--","NC","/"), quote = "\"")
+      object$references <- read_delim(file = project$files[grep("references.txt", project$files)],
+                                      delim = "|",
+                                      na = c("NA","","NR","--","NC","/"),
+                                      quote = "\"",
+                                      show_col_types = FALSE)
     })
 
     #  Trim lists
@@ -87,7 +105,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
     project$database_path <- suppressWarnings(normalizePath(database_path))
     project$project_path <- suppressWarnings(normalizePath(project_path))
     project$object$chemprop <- create_chemical_properties(database_path)
-    project$files <- suppressWarnings(normalizePath(list.files(database_path, pattern = "*.txt", full.names = T, recursive = T)))
+    project$files <- suppressWarnings(normalizePath(list.files(database_path, pattern = "*.txt", full.names = TRUE, recursive = TRUE)))
   }
 
   return(project)
