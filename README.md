@@ -1,8 +1,8 @@
----
+<!-----
 title: "REcoTox - A  workflow to process US EPA ECOTOX Knowledgebase ASCII files"
 author: "Tobias Schulze"
 date: '2022-04-07'
-output: pdf_document
+output: pdf_document -->
 ---
 
 # Background
