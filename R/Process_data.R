@@ -365,7 +365,6 @@
         object <- update_chemical_list(object, project_path = project_path, database_path = database_path)
       }
       object <- build_final_list(object)
-      object <- calculate_water_solubility(object)
       object <- calculate_hours(object)
 
       #object <- calculate_water_solubility(object)

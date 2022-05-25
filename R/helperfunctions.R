@@ -66,17 +66,80 @@ calculate_hours <- function(object = object){
 }
 
 
-calculate_water_solubility <- function(object = object){
+convert_water_solubility <- function(object) {
 
-  message("[EcoToxR]:  Estimating the solubility domain")
+    message("[EcoToxR]:  Convert the solubility to mg/L.")
 
-  results <- object$results
+    object <- object %>%
+        rename(S_mg_L = "LOG_S", QSAR_S_AD = "LOG_S_AD", QSAR_S_COMMENT = "LOG_S_COMMENT") %>%
+        rowwise() %>%
+        mutate(S_mg_L = if_else(!is.na(AVERAGE_MASS), true = signif(x = 10^S_mg_L * 1000 * AVERAGE_MASS, digits = 4), false = NaN),
+        ) %>%
+        ungroup()
+
+    return(object)
+
+}
+
+
+
+calculate_solubility_domain <- function(object = object, input_column_list = c("quantile_value_mg_L",
+                                                                               "min_value_mg_L",
+                                                                               "max_value_mg_L",
+                                                                               "mean_value_mg_L",
+                                                                               "geomean_value_mg_L",
+                                                                               "median_value_mg_L")){
+
+    message("[EcoToxR]:  Estimating the solubility domain.")
+
+    # add new dummy columns for the calculation
+    #
+    #
+    #
+    #
+    #
+
+    for (input_column in input_column_list) {
+
+        object <- object %>% ungroup()
+
+        object <- object %>%
+            mutate(input_data = as.vector(pull(object[, input_column]))) %>%
+            add_column(input_data_ad = NA) %>%
+            rowwise() %>%
+            mutate(input_data_ad = case_when(input_data <= S_mg_L ~ 3,
+
+                input_data > S_mg_L & input_data <= 10^5 * log10(S_mg_L) ~ 2,
+
+                input_data > S_mg_L & input_data > 10^5 * log10(S_mg_L) & input_data <= 10^10 * log10(S_mg_L) ~ 1,
+
+                input_data > 10^10 * log10(S_mg_L) ~ 0
+                )
+            )
+
+
+        ad_output_column = case_when(input_column == "quantile_value_mg_L" ~ "quantile_value_S_AD",
+                                     input_column == "min_value_mg_L" ~ "min_value_S_AD",
+                                     input_column == "max_value_mg_L" ~ "max_value_S_AD",
+                                     input_column == "mean_value_mg_L" ~ "mean_value_S_AD",
+                                     input_column == "geomean_value_mg_L" ~ "geomean_value_S_AD",
+                                     input_column == "median_value_mg_L" ~ "median_value_S_AD")
+
+
+        object <- object %>% select(., -input_data) %>%
+            rename(!!ad_output_column := input_data_ad) %>%
+            ungroup()
+
+    }
+
+
+  #results <- object$results
 
   # Calculate S in mg/L
-  results <- results %>%
-      rowwise() %>%
-      mutate(S_mg_L = 10^LOG_S * AVERAGE_MASS * 1000) %>%
-      filter(is.na(EXCLUDE)) # OPERA output g/L
+  #results <- results %>%
+  #    rowwise() %>%
+  #    mutate(S_mg_L = 10^LOG_S * AVERAGE_MASS * 1000) %>%
+  #    filter(is.na(EXCLUDE)) # OPERA output g/L
 
   # Domain estimate solubility domain (based on ideas in ChemProp)
   # Case 1: if EC <= Sw -> 3
@@ -98,34 +161,18 @@ calculate_water_solubility <- function(object = object){
 
 # Opera
 #
-  results <- results %>%
-      mutate(S_mg_L_AD = NA)
-  results <- results %>%
-      rowwise() %>%
-      mutate(
 
-          S_mg_L_AD = case_when(
 
-              is.na(EXCLUDE) & concentration_mean <= S_mg_L ~ 3,
-
-              is.na(EXCLUDE) & concentration_mean > S_mg_L & concentration_mean <= 10^5 * log10(S_mg_L) ~ 2,
-
-              is.na(EXCLUDE) & concentration_mean > S_mg_L & concentration_mean > 10^5 * log10(S_mg_L) & concentration_mean <= 10^10 * log10(S_mg_L) ~ 1,
-
-              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(S_mg_L) ~ 0
-
-          )
-      )
 
 
   # Finally exclude if no meaningful data is available
 
-  results <- results %>%
-      rowwise() %>%
-      mutate(
-              EXCLUDE = case_when(is.na(EXCLUDE) & is.na(concentration_mean) ~ 1)
-
-      )
+  # results <- results %>%
+  #     rowwise() %>%
+  #     mutate(
+  #             EXCLUDE = case_when(is.na(EXCLUDE) & is.na(concentration_mean) ~ 1)
+  #
+  #     )
 
 # this is only for debugging
   # # If concentration_mean is <= Sw, the
@@ -168,7 +215,7 @@ calculate_water_solubility <- function(object = object){
   #
   # }
   # #pb$terminate()
-  object$results <- results
+  # object$results <- results
   return(object)
 }
 

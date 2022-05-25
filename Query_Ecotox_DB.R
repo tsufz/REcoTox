@@ -7,7 +7,8 @@
 
 source("./R/Create_project.R")
 
-
+# For documentation
+# REcoTox 0.2.0
 
 set.seed(4711456)
 
@@ -15,10 +16,10 @@ set.seed(4711456)
 # A comprehensive name is for example "EcoTox_Fish_EC50"
 
 
-database_path <- "path_to_database"
+database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
 
 # Declare the project folder to store the files of your query
-project_path <- "path_to_project"
+project_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Projekte/EcoToxDB/Algae_EcoTox_220310_XX50"
 
 # Declare the ecotox group ("Species Group")
 
@@ -42,9 +43,9 @@ project <- create_project(database_path, project_path,
 # Step 1: Run the first data preparation step to create the initial project
 
 project <- prepare_data(project = project,
-                        load_initial_project = FALSE,
+                        load_initial_project = TRUE,
                         new_project_path = NA,
-                        save_project = TRUE
+                        save_project = FALSE
                         )
 
 # Reload the results of the first step
@@ -56,9 +57,9 @@ dosing_group = "water_concentration" # i.e. mg/L (only available group in this v
 duration_d = c("d", "dph", "dpf")
 duration_h = c("h", "ht", "hph", "hpf", "hbf", "hv")
 duration_m = "mi"
-ecotoxgroup = "Crustacean" # c("Algae", "Crustacean", "Fish")
-#effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV") # Algae/Fish
-effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV", "ITX") # Crustacean
+ecotoxgroup = "Algae" # c("Algae", "Crustacean", "Fish")
+effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV") # Algae/Fish
+#effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV", "ITX") # Crustacean
 habitat = "Water" #c("Non-Soil","Water","Soil")
 kingdoms = NA # vector of specific algae kingdoms: c("Chromista","Plantae","Monera")
 measurements = NA # vector of specific measurements
@@ -68,7 +69,7 @@ max_h = 120
 max_d = 5
 min_m = 0
 max_m = 7200
-species_selection = "standard_test_species" # c("all", "manual", "standard_test_species")
+species_selection = "all" # c("all", "manual", "standard_test_species")
 
 
 # Run the workflow

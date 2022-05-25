@@ -3,7 +3,7 @@ library(progress)
 library(tidyverse)
 library(data.table)
 
-chemical_list <- read_csv("C:/TEMP/EcoToxDB/Crustacean_EcoTox_220310_LOEC_LC99/pubchem.csv", na = c("N/A", "NA", NA))
+chemical_list <- read_csv("C:/users/schulzet/Desktop/in_progress/Melis_Danube/Melis_Compounds.csv", na = c("N/A", "NA", NA))
 
 # Split the list in entries with smiles and w/o smiles
 chemical_list_SMILES <- chemical_list %>% filter(!is.na(SMILES))
@@ -45,14 +45,21 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
 
     # lookup for CID based on CASRN
     casrn <- chemical_list_no_SMILES[i, "cas"][[1]]
-    pccid <- get_cid(casrn)
+
+    if (is.na(casrn)) {
+        name <- chemical_list_no_SMILES[i, "name"][[1]]
+        pccid <- get_cid(name)
+    } else {
+        pccid <- get_cid(casrn)
+    }
+
     cas_number <- chemical_list_no_SMILES[i, "cas_number"][[1]]
     pccid <- pccid %>% mutate(across(cid, as.integer)) %>% mutate(cas_number = cas_number)
 
 
     if (is.na(pccid$cid[[1]])) {
         pubchem_new_row <- tibble(
-            "cas_number" = integer(),
+            "cas_number" = character(),
             "cas" = character(),
             "cid" = integer(),
             "FOUND_BY" = character(),
@@ -95,7 +102,7 @@ for (i in 1:nrow(chemical_list_no_SMILES)){
 
     if (is.na(pc_props$CanonicalSMILES)) {
         pubchem_new_row <- tibble(
-            "cas_number" = integer(),
+            "cas_number" = character(),
             "cas" = character(),
             "cid" = integer(),
             "FOUND_BY" = character(),
@@ -190,4 +197,4 @@ chemical_list <- chemical_list %>% mutate(EXCLUDE = ifelse(FOUND_BY == "No data 
                                           REMARKS = ifelse(FOUND_BY == "No data retrieved from PubChem", "no data or mixture", REMARKS))
 
 
-write_csv(chemical_list, "C:/TEMP/EcoToxDB/Crustacean_EcoTox_220310_LOEC_LC99/pubchem_updated.csv")
+write_csv(chemical_list, "C:/users/schulzet/Desktop/in_progress/Melis_Danube/Melis_Compounds_PubChem_updated.csv")
