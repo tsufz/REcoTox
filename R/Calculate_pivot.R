@@ -146,7 +146,7 @@ message("[EcoToxR]:  Summarizing the data.")
                                    "duration_list"
                                    ) %>%
       group_by(PREFERRED_NAME) %>%
-      arrange(.)
+      arrange(.by_group = TRUE)
 
 
   message("[EcoToxR]:  Saving the pivot table.")
