@@ -71,11 +71,12 @@ convert_water_solubility <- function(object) {
     message("[EcoToxR]:  Convert the solubility to mg/L.")
 
     object <- object %>%
-        rename(S_mg_L = "LOG_S", QSAR_S_AD = "LOG_S_AD", QSAR_S_COMMENT = "LOG_S_COMMENT") %>%
         rowwise() %>%
-        mutate(S_mg_L = if_else(!is.na(AVERAGE_MASS), true = signif(x = 10^S_mg_L * 1000 * AVERAGE_MASS, digits = 4), false = NaN),
-        ) %>%
-        ungroup()
+        mutate(S_mg_L = if_else(!is.na(AVERAGE_MASS),
+                                true = signif(x = 10^LOG_S * 1000 * AVERAGE_MASS, digits = 4),
+                                false = NaN)) %>%
+        ungroup() %>%
+        rename(QSAR_S_AD = "LOG_S_AD", QSAR_S_COMMENT = "LOG_S_COMMENT")
 
     return(object)
 
