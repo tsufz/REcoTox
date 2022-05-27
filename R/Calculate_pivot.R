@@ -101,9 +101,21 @@ message("[EcoToxR]:  Summarizing the data.")
   # Add the solubiltiy domain for each output parameter
 
   results_pivot <- results_pivot %>% left_join(chemical_list %>%
-                                                   select(cas_number, LOG_S, LOG_S_AD, LOG_S_COMMENT,
-                                                          AVERAGE_MASS, DTXSID, CID,
-                                                          CASRN, INCHIKEY, PREFERRED_NAME),
+                                                   select(cas_number,
+                                                          LOG_S,
+                                                          LOG_S_AD,
+                                                          LOG_S_COMMENT,
+                                                          AVERAGE_MASS,
+                                                          DTXSID,
+                                                          CID,
+                                                          CASRN,
+                                                          SMILES,
+                                                          INCHIKEY,
+                                                          PREFERRED_NAME,
+                                                          INCHIKEY,
+                                                          QSAR_READY_SMILES,
+                                                          MOLECULAR_FORMULA,
+                                                          REMARKS),
                                                by = "cas_number")
 
   results_pivot <- convert_water_solubility(object = results_pivot)
@@ -136,8 +148,12 @@ message("[EcoToxR]:  Summarizing the data.")
                                    "DTXSID",
                                    "CID",
                                    "CASRN",
+                                   "SMILES",
                                    "INCHIKEY",
+                                   "QSAR_READY_SMILES",
+                                   "MOLECULAR_FORMULA",
                                    "AVERAGE_MASS",
+                                   "REMARKS",
                                    "endpoint_list",
                                    "species_list",
                                    "concentration_mean_list",
