@@ -3,43 +3,20 @@ library(jsonlite)
 library(httr)
 
 
-chemical_list <- read_csv("d:/UFZ_DATA/MoA_Paper/Basic_compound_list_20220109_original_DoNotChange_curated.csv", na = "n/a", show_col_types = FALSE)
+chemical_list <- read_csv("s:/Get_Pubchem/Basic_compound_list_20220109_original_DoNotChange_curated.csv", na = "n/a", show_col_types = FALSE)
 
 chemical_list <- chemical_list %>% select(MoA_ID, PubChem_CID) %>% rename(cid = "PubChem_CID", ID = "MoA_ID")
+
+#chemical_list_sample <- chemical_list %>% slice_sample(n = 25)
 
 #chemical_list <- chemical_list[1:40,]
 
 
-chemical_list_updated <- get_pubchem_experiments(object = chemical_list)
+chemical_list_updated <- get_pubchem_experiments(object = chemical_list, sleep = 2, debug = FALSE)
 
+get_pubchem_experiments <- function(object = chemical_list, sleep = 1, debug = FALSE){
 
-get_pubchem_experiments <- function(object = chemical_list){
-
-    pubchem_experimental <- tibble(
-        "ID" = character(),
-        "cid" = integer(),
-        "PC_LogP_experimental" = integer(),
-        "PC_LogP_experimental_reference" = character(),
-        "PC_WS_experimental" = integer(),
-        "PC_WS_experimental_unit" = character(),
-        "PC_WS_experimental_reference" = character(),
-        "PC_pKa_experimental" = integer(),
-        "PC_pKa_experimental_reference" = character(),
-        "PC_acidic_pKa1_experimental" = integer(),
-        "PC_acidic_pKa1_experimental_reference" = character(),
-        "PC_acidic_pKa2_experimental" = integer(),
-        "PC_acidic_pKa2_experimental_reference" = character(),
-        "PC_acidic_pKa3_experimental" = integer(),
-        "PC_acidic_pKa3_experimental_reference" = character(),
-        "PC_basic_pKa1_experimental" = integer(),
-        "PC_basic_pKa1_experimental_reference" = character(),
-        "PC_basic_pKa2_experimental" = integer(),
-        "PC_basic_pKa2_experimental_reference" = character(),
-        "PC_basic_pKa3_experimental" = integer(),
-        "PC_basic_pKa3_experimental_reference" = character()
-
-    )
-
+    pubchem_experimental <- get_pubchem_experiments_tibble()
 
     length_progressbar <- nrow(object)
     pb <- progress::progress_bar$new(
@@ -48,16 +25,20 @@ get_pubchem_experiments <- function(object = chemical_list){
 
     for ( i in 1:nrow(object) ){
 
+        if (isTRUE(debug)) {
+            print(i)
+        }
+
         pb$tick()
 
-        Sys.sleep(1)
+        Sys.sleep(sleep)
 
-        cid <- object[i, "cid"]
-        ID <- object[i, "ID"]
+        cid <- object[i, "cid"][[1]]
+        ID <- object[i, "ID"][[1]]
 
         if ( is.na(cid) ) {
 
-            pubchem_experimental_new_row <- pubchem_experimental %>% add_row()
+            pubchem_experimental_new_row <- get_pubchem_experiments_tibble() %>% add_row()
 
             pubchem_experimental_new_row$ID <- ID
 
@@ -71,11 +52,6 @@ get_pubchem_experiments <- function(object = chemical_list){
 
             pubchem_json <- get_pubchem_json(cid = cid, ID = ID)
 
-            if ( pubchem_json == 0 ) {
-
-                return(pubchem_experimental)
-            }
-
 
             if ( isTRUE(pubchem_json$json) ) {
 
@@ -85,9 +61,10 @@ get_pubchem_experiments <- function(object = chemical_list){
 
                 pubchem_json <- get_pka(pubchem_json)
 
-                pubchem_experimental_new_row <- pubchem_experimental %>%
+                pubchem_experimental_new_row <- get_pubchem_experiments_tibble() %>%
                     add_row() %>%
                     mutate(cid = pubchem_json$cid,
+                           ID = pubchem_json$ID,
                            PC_LogP_experimental = pubchem_json$PC_LogP_experimental,
                            PC_LogP_experimental_reference = pubchem_json$PC_LogP_experimental_reference,
                            PC_WS_experimental = pubchem_json$PC_WS_experimental,
@@ -108,11 +85,12 @@ get_pubchem_experiments <- function(object = chemical_list){
                            PC_basic_pKa3_experimental = pubchem_json$PC_basic_pKa3_experimental,
                            PC_basic_pKa3_experimental_reference = pubchem_json$PC_basic_pKa3_experimental_reference)
 
+                pubchem_experimental <- rbind(pubchem_experimental, pubchem_experimental_new_row)
             }
 
             if ( isFALSE(pubchem_json$json) ) {
 
-                pubchem_experimental_new_row <- pubchem_experimental %>% add_row()
+                pubchem_experimental_new_row <- get_pubchem_experiments_tibble() %>% add_row()
 
                 pubchem_experimental_new_row$ID <- ID
 
@@ -120,7 +98,7 @@ get_pubchem_experiments <- function(object = chemical_list){
 
                 pubchem_experimental <- rbind(pubchem_experimental, pubchem_experimental_new_row)
 
-                }
+            }
 
         }
 
@@ -138,55 +116,48 @@ get_pubchem_json <- function(cid = NA, ID = NA) {
 
     url_json <- paste0("https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/", cid, "/JSON")
 
-    resp <- tryCatch( {
+    #resp <- tryCatch( {
 
-        httr::GET(url_json)
+    resp <- httr::GET(url_json)
 
-        },
-
-        error = function(e) {
-
-            message("Server timed out")
-
-            return()
-
-        },
-
-        finally = {
-
-            message("Response retrieved")
-        }
-
-    )
-
-    if ( is_empty(resp) ) {
-
-        pubchem_json <- 0
-
-        return(pubchem_json)
-
-    }
-
+    # },
+    #
+    # error = function(e) {
+    #
+    #   message("Server timed out")
+    #
+    #   resp <- 0
+    #
+    #   return(resp)
+    #
+    # }
+    #
+    # )
+    #
+    # if ( resp == 0 ) {
+    #
+    #   pubchem_json <- 0
+    #
+    #   break
+    #
+    #   return(pubchem_json)
+    #
+    # }
+    #
 
     cont_raw <- tryCatch( {
 
         httr::content(resp, as = "parsed")
 
-        },
+    },
 
-        error = function(e) {
+    error = function(e) {
 
-            message("JSON was empty")
+        message("JSON was empty")
 
-            return()
+        return()
 
-        },
-
-        finally = {
-
-            message("JSON retrieved")
-
-           }
+    }
     )
 
     if ( is_empty(cont_raw) ) {
@@ -379,6 +350,25 @@ get_pka <- function(object = pubchem_json) {
 
         basic_pka <- which(dc_section$value == "Basic pka")
 
+        if ( is_empty(pka) & is_empty(acidic_pka) & is_empty(basic_pka) ) {
+
+            pubchem_json$PC_pKa_experimental <- NA
+            pubchem_json$PC_pKa_experimental_reference <- NA
+            pubchem_json$PC_pKa_experimental <- NA
+            pubchem_json$PC_acidic_pKa1_experimental <- NA
+            pubchem_json$PC_acidic_pKa1_experimental_reference <- NA
+            pubchem_json$PC_acidic_pKa2_experimental <- NA
+            pubchem_json$PC_acidic_pKa2_experimental_reference <- NA
+            pubchem_json$PC_acidic_pKa3_experimental <- NA
+            pubchem_json$PC_acidic_pKa3_experimental_reference <- NA
+            pubchem_json$PC_basic_pKa1_experimental <- NA
+            pubchem_json$PC_basic_pKa1_experimental_references <- NA
+            pubchem_json$PC_basic_pKa2_experimental <- NA
+            pubchem_json$PC_basic_pKa2_experimental_references <- NA
+            pubchem_json$PC_basic_pKa3_experimental <- NA
+            pubchem_json$PC_basic_pKa3_experimental_references <- NA
+
+        }
 
 
         if ( !is_empty(pka) ) {
@@ -442,5 +432,36 @@ get_pka <- function(object = pubchem_json) {
 
 
     return(object)
+}
+
+
+get_pubchem_experiments_tibble <- function(){
+
+    pubchem_experimental <- tibble(
+        "ID" = character(),
+        "cid" = integer(),
+        "PC_LogP_experimental" = integer(),
+        "PC_LogP_experimental_reference" = character(),
+        "PC_WS_experimental" = integer(),
+        "PC_WS_experimental_unit" = character(),
+        "PC_WS_experimental_reference" = character(),
+        "PC_pKa_experimental" = integer(),
+        "PC_pKa_experimental_reference" = character(),
+        "PC_acidic_pKa1_experimental" = integer(),
+        "PC_acidic_pKa1_experimental_reference" = character(),
+        "PC_acidic_pKa2_experimental" = integer(),
+        "PC_acidic_pKa2_experimental_reference" = character(),
+        "PC_acidic_pKa3_experimental" = integer(),
+        "PC_acidic_pKa3_experimental_reference" = character(),
+        "PC_basic_pKa1_experimental" = integer(),
+        "PC_basic_pKa1_experimental_reference" = character(),
+        "PC_basic_pKa2_experimental" = integer(),
+        "PC_basic_pKa2_experimental_reference" = character(),
+        "PC_basic_pKa3_experimental" = integer(),
+        "PC_basic_pKa3_experimental_reference" = character()
+
+    )
+
+    return(pubchem_experimental)
 }
 
