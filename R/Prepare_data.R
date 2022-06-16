@@ -1,6 +1,7 @@
 prepare_data <- function(project,
                          load_initial_project = FALSE,
                          new_project_path = NA,
+                         reread_chemical_list = NA,
                          save_project = TRUE
                          ) {
 
@@ -13,12 +14,18 @@ prepare_data <- function(project,
       if (!is.na(new_project_path)) {
         .tempenv$project$project_path <- normalizePath(project_path)
       }
+
+      if ( isTRUE(reread_chemical_list) ) {
+          .tempenv$project <- read_csv(file.path(database_path, "chemical_properties.csv"))
+      }
+
       return(.tempenv$project)
       } else {
       message("[EcoToxR]:  The initial project does not exist. Please run 'Prepare_data' to prepare.")
       return()
     }
   }
+
   # Copy the object
   object <- project$object
 
