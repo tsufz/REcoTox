@@ -3,7 +3,7 @@ library(progress)
 library(tidyverse)
 library(data.table)
 
-chemical_list <- read_csv("c:/TEMP/EcoToxDB/test/algae_chemical_list.csv")
+chemical_list <- read_csv("path_to_project/algae_chemical_list.csv")
 
 length_progressbar <- nrow(chemical_list)
 pb <- progress::progress_bar$new(
@@ -44,5 +44,4 @@ for (i in 1:nrow(chemical_list)){
 }
 
 
-
-write_csv(chemical_list, "c:/TEMP/EcoToxDB/test/algae_chemical_list_update.csv")
+write_csv(chemical_list, "path_to_project/algae_chemical_list.csv")
