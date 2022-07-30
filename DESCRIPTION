@@ -1,8 +1,13 @@
 Package: REcoTox
 Type: Script
 Title: REcoTox - A  workflow to process US EPA ECOTOX Knowledgebase ASCII files
+<<<<<<< HEAD
 Version: 0.3.3
 Date: 2022-09-20
+=======
+Version: 0.3.0
+Date: 2022-07-30
+>>>>>>> 841816b (Bump to version 0.3.0)
 Authors@R: 
     c(person(given = "Tobias",
              family = "Schulze",
@@ -20,6 +25,7 @@ Authors@R:
              email = "joerg.hackermueller@ufz.de",
              comment = c(ORCID = "0000-0003-4920-7072"))
              )
+<<<<<<< HEAD
 Maintainer: Tobias Schulze <tobias.schulze@ufz.de>
 Description: REcoTox is a semi-automated, interactive workflow to process
   US EPA ECOTOX Knowledgebase entire database ASCII files to extract and process
@@ -65,3 +71,14 @@ Collate:
     'process_data.R'
     'zzz.R'
     
+=======
+             
+Maintainer: Tobias Schulze <tobias.schulze@ufz.de>
+Description: REcoTox is a semi-automated, interactive workflow to process US EPA ECOTOX Knowledgebase
+entire database ASCII files to extract and process ecotoxicological data relevant (but not restricted)
+to the ecotoxicity groups algae, crustaceans, and fish in the aquatic domain. The latest version of
+the ASCII files is available on US EPA ECOTOX Knowledgebase. The focus is aquatic ecotoxicity and
+the unit of the retrieved data is mg/L.
+License: AGPL-3.0
+
+>>>>>>> 841816b (Bump to version 0.3.0)
