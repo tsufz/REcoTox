@@ -83,6 +83,9 @@ prepare_data <- function(project,
     message("[EcoToxR]:  Saving the initial project to the project folder.")
     file_name <- suppressWarnings(normalizePath(file.path(project$project_path, "initial_project.RData")))
     save(project, file = file_name, compress = TRUE)
+  } else {
+
+      return(project)
   }
   return(project)
 }
