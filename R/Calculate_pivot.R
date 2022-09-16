@@ -1,3 +1,6 @@
+#' @export
+#'
+
 calculate_pivot_table <- function(project, quantile = NA, limit_S_AD = NA, reread = FALSE){
 
 message("[EcoToxR]:  Summarizing the data.")

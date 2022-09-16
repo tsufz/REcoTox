@@ -57,7 +57,7 @@ calculate_hours <- function(object = object){
       mutate(obs_duration_mean = 24 * obs_duration_mean) %>%
       mutate(obs_duration_unit = "h")
 
-  results <- tibble(rbind(results_h, results_d))
+  results <- as_tibble(row_bind(results_h, results_d))
 
   object$results <- results
 
@@ -259,8 +259,8 @@ export_exclude_list <- function(object, project_path){
                                                                        "latin_name", "author", "title", "source", "publication_year"),
                                                                     with = FALSE])
   object$results_filtered_exclude_list <- data.table(object$results_filtered_exclude_list[order(chemical_name)])
-  fwrite(data.table(unique(object$results_filtered_exclude_list$cas)), suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list_cas.csv")))), sep = ",", dec = ".")
-  fwrite(object$results_filtered_exclude_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv")))), sep = ",", dec = ".")
+  write_csv(data.table(unique(object$results_filtered_exclude_list$cas)), suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list_cas.csv")))), na = "NA")
+  write_csv(object$results_filtered_exclude_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv")))), na = "NA")
   return(object)
 }
 
@@ -288,7 +288,7 @@ remove_excluded_chemicals <- function(object, project_path){
 
   object$results_filtered <- object$results_filtered  %>% group_by(cas_number) %>% filter(cas_number %in% inclusion_list)
 
-  write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_included_by_chemical.csv")))
+  write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_included_by_chemical.csv")), na = "NA")
 
   if(object$results_excluded_by_chemical %>% nrow() > 0){
     write_csv(object$results_excluded, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_excluded_by_chemical.csv")))), na = "NA")
@@ -357,7 +357,7 @@ query_pubchem <- function(object = object) {
 
             pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
-            pubchem <- rbind(pubchem, pubchem_new_row)
+            pubchem <- row_bind(pubchem, pubchem_new_row)
 
             next()
 
@@ -397,7 +397,7 @@ query_pubchem <- function(object = object) {
 
                 pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
-                pubchem <- rbind(pubchem, pubchem_new_row)
+                pubchem <- row_bind(pubchem, pubchem_new_row)
 
                 next()
             }
@@ -464,7 +464,7 @@ query_pubchem <- function(object = object) {
 
 
     # recombine lists
-    chemical_list <- rbind(chemical_list_with_SMILES, chemicals_update)
+    chemical_list <- row_bind(chemical_list_with_SMILES, chemicals_update)
 
 
     # add comments and exclude those entries with remaining gaps
@@ -697,7 +697,7 @@ convert_units <- function(object, sample_size = NA) {
 
   object <- object %>% mutate(concentration_mean = conc1_mean, concentration_unit = conc1_unit)
 
-  object <- rbind(object %>% filter(!is.na(concentration_mean)),
+  object <- row_bind(object %>% filter(!is.na(concentration_mean)),
                   object %>% filter(is.na(concentration_mean)) %>%
                       rowwise() %>%
                       mutate(concentration_mean = if_else(condition = is.na(concentration_mean),
@@ -930,4 +930,52 @@ save_project <- function(object = object, save_project_steps = save_project_step
          file = file.path(project_path, paste0(tolower(ecotoxgroup), "_state", state, ".RData")),
          compress = TRUE)
   }
+}
+
+get_git <- function(){
+
+
+  #chemical_list <- read_csv("path_to_project/algae_chemical_list.csv")
+
+  length_progressbar <- nrow(chemical_list)
+  pb <- progress::progress_bar$new(
+    format = "[EcoToxR]:  Retrival of PubChem data [:bar] :percent ETA: :eta",
+    total = length_progressbar, clear = FALSE, width = 80)
+
+  for (i in 1:nrow(chemical_list)){
+
+    pb$tick()
+
+    if (is.na(chemical_list$CID[i])){
+      # lookup for CID based on CASRN
+      casrn <- chemical_list[i, "CASRN"][[1]]
+      pccid <- get_cid(casrn)
+      cas_number <- chemical_list[i, "cas_number"][[1]]
+      pccid <- pccid %>% mutate(across(cid, as.integer)) %>% mutate(cas_number = cas_number)
+
+
+      if (is.na(pccid$cid[[1]])) {
+        next()
+
+      } else if (nrow(pccid) > 1) {
+        # Us the first entry in PubChem only
+        pccid <- pccid %>% arrange(cid)
+        pccid <- pccid %>% slice_min(cid, n = 1)
+
+      }
+
+
+      chemical_list[i, "CID"] <- pccid[[2]]
+
+      # write_csv(chemical_list, "c:/TEMP/EcoToxDB/test/algae_chemical_list.csv")
+
+    } else {
+      next()
+    }
+
+  }
+
+
+  write_csv(chemical_list, "path_to_project/algae_chemical_list.csv")
+
 }

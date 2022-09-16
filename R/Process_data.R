@@ -1,3 +1,4 @@
+#' @export
 # functions
 
   process_data <- function(project,

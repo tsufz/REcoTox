@@ -1,3 +1,7 @@
+#' @export
+#'
+
+
 prepare_data <- function(project,
                          load_initial_project = FALSE,
                          new_project_path = NA,
@@ -89,3 +93,4 @@ prepare_data <- function(project,
   }
   return(project)
 }
+
