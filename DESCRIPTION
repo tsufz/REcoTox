@@ -1,8 +1,8 @@
 Package: REcoTox
 Type: Script
 Title: REcoTox - A  workflow to process US EPA ECOTOX Knowledgebase ASCII files
-Version: 0.3.0
-Date: 2022-09-16
+Version: 0.3.1
+Date: 2022-09-20
 Authors@R: 
     c(person(given = "Tobias",
              family = "Schulze",
