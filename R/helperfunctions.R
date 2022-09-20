@@ -57,7 +57,7 @@ calculate_hours <- function(object = object){
       mutate(obs_duration_mean = 24 * obs_duration_mean) %>%
       mutate(obs_duration_unit = "h")
 
-  results <- tibble(row_bind(results_h, results_d))
+  results <- tibble(bind_rows(results_h, results_d))
 
   object$results <- results
 
@@ -357,7 +357,7 @@ query_pubchem <- function(object = object) {
 
             pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
-            pubchem <- row_bind(pubchem, pubchem_new_row)
+            pubchem <- bind_rows(pubchem, pubchem_new_row)
 
             next()
 
@@ -397,7 +397,7 @@ query_pubchem <- function(object = object) {
 
                 pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
-                pubchem <- row_bind(pubchem, pubchem_new_row)
+                pubchem <- bind_rows(pubchem, pubchem_new_row)
 
                 next()
             }
@@ -464,7 +464,7 @@ query_pubchem <- function(object = object) {
 
 
     # recombine lists
-    chemical_list <- row_bind(chemical_list_with_SMILES, chemicals_update)
+    chemical_list <- bind_rows(chemical_list_with_SMILES, chemicals_update)
 
 
     # add comments and exclude those entries with remaining gaps
@@ -697,7 +697,7 @@ convert_units <- function(object, sample_size = NA) {
 
   object <- object %>% mutate(concentration_mean = conc1_mean, concentration_unit = conc1_unit)
 
-  object <- row_bind(object %>% filter(!is.na(concentration_mean)),
+  object <- bind_rows(object %>% filter(!is.na(concentration_mean)),
                   object %>% filter(is.na(concentration_mean)) %>%
                       rowwise() %>%
                       mutate(concentration_mean = if_else(condition = is.na(concentration_mean),
