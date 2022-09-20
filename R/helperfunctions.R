@@ -57,7 +57,7 @@ calculate_hours <- function(object = object){
       mutate(obs_duration_mean = 24 * obs_duration_mean) %>%
       mutate(obs_duration_unit = "h")
 
-  results <- as_tibble(row_bind(results_h, results_d))
+  results <- tibble(row_bind(results_h, results_d))
 
   object$results <- results
 

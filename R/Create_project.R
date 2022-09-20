@@ -152,7 +152,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
       load_default = TRUE
     }
     if (exists("project") & load_default == FALSE) {
-      project$object$chemprop <- as_tibble(create_chemical_properties(project$database_path))
+      project$object$chemprop <- tibble(create_chemical_properties(project$database_path))
       project$project_path <- suppressWarnings(normalizePath(project_path))
     }
   }
