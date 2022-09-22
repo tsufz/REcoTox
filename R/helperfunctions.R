@@ -49,7 +49,7 @@ build_final_list <- function(object = object){
   # reorder list
 
   results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID,
-                                DTXSID_DTX, DTXSID_ECOTOX
+                                DTXSID_DTX, DTXSID_ECOTOX,
                                 PREFERRED_NAME, test_location,
                                 reference_number,
                                 conc1_type, conc1_mean_op, conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max,
