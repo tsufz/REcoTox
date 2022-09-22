@@ -22,11 +22,11 @@ Authors@R:
              )
 Maintainer: Tobias Schulze <tobias.schulze@ufz.de>
 Description: REcoTox is a semi-automated, interactive workflow to process
-  US EPA ECOTOX Knowledgebase entire database ASCII files to extract and process
-  ecotoxicological data relevant (but not restricted) to the ecotoxicity groups
-  algae, crustaceans, and fish in the aquatic domain. The latest version of
-  the ASCII files is available on US EPA ECOTOX Knowledgebase.
-  The focus is aquatic ecotoxicity and the unit of the retrieved data is mg/L.
+    US EPA ECOTOX Knowledgebase entire database ASCII files to extract and process
+    ecotoxicological data relevant (but not restricted) to the ecotoxicity groups
+    algae, crustaceans, and fish in the aquatic domain. The latest version of
+    the ASCII files is available on US EPA ECOTOX Knowledgebase.
+    The focus is aquatic ecotoxicity and the unit of the retrieved data is mg/L.
 License: AGPL-3.0
 Depends: 
     R(>= 4.0.0)
@@ -65,10 +65,3 @@ Collate:
     'prepare_data.R'
     'process_data.R'
     'zzz.R'
-Maintainer: Tobias Schulze <tobias.schulze@ufz.de>
-Description: REcoTox is a semi-automated, interactive workflow to process US EPA ECOTOX Knowledgebase
-    entire database ASCII files to extract and process ecotoxicological data relevant (but not restricted)
-    to the ecotoxicity groups algae, crustaceans, and fish in the aquatic domain. The latest version of
-    the ASCII files is available on US EPA ECOTOX Knowledgebase. The focus is aquatic ecotoxicity and
-    the unit of the retrieved data is mg/L.
-License: AGPL-3.0
