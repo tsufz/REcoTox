@@ -38,6 +38,7 @@ Imports:
     Rdpack,
     readr,
     tibble,
+	tidyr,
     tidyverse,
     utils,
     webchem
