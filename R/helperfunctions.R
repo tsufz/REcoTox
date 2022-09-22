@@ -10,7 +10,7 @@ build_final_list <- function(object = object){
 
 
   results <- results %>% select(cas_number, cas, chemical_name, compound_class,
-                                dtxsid, test_location, conc1_type, conc1_mean_op,
+                                dtxsid_ecotox, test_location, conc1_type, conc1_mean_op,
                                 conc1_mean, conc1_min_op, conc1_min, conc1_max_op,
                                 conc1_max, conc1_unit, conc1_comments,
                                 concentration_mean, concentration_unit, obs_duration_mean,
@@ -23,12 +23,12 @@ build_final_list <- function(object = object){
                                 variety, ecotox_group, result_id, reference_db,
                                 reference_type, author, title, source,
                                 publication_year, include_endpoint, include_species) %>%
-    rename(DTXSID_ECOTOX = dtxsid)
+    rename(dtxsid_ecotox = dtxsid_ecotox)
 
 
   results <- results %>% left_join(object$chemprop %>% select(cas_number,
                                                               CID,
-                                                              DTXSID,
+                                                              DTXSID_DTX,
                                                               PREFERRED_NAME,
                                                               CASRN,
                                                               SMILES,
@@ -49,7 +49,7 @@ build_final_list <- function(object = object){
   # reorder list
 
   results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID,
-                                DTXSID_DTX, DTXSID_ECOTOX,
+                                dtxsid_ecotox, DTXSID_DTX,
                                 PREFERRED_NAME, test_location,
                                 reference_number,
                                 conc1_type, conc1_mean_op, conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max,
@@ -256,7 +256,7 @@ export_chemical_list <- function(object, project_path){
   chemical_list <- object$results_filtered %>%
       select(cas_number, cas, chemical_name) %>%
       unique() %>%
-      left_join(object$chemprop %>% select(cas_number, CID, FOUND_BY, DTXSID, PREFERRED_NAME, CASRN, INCHIKEY,
+      left_join(object$chemprop %>% select(cas_number, dtxsid_ecotox, CID, FOUND_BY, DTXSID_DTX, PREFERRED_NAME, CASRN, INCHIKEY,
                                            IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA, AVERAGE_MASS,
                                            MONOISOTOPIC_MASS, QSAR_READY_SMILES, QC_LEVEL, LOG_S, LOG_S_AD, LOG_S_COMMENT,
                                            EXCLUDE, REMARKS),
@@ -572,9 +572,10 @@ create_chemical_properties <- function(database_path){
         "cas_number" = integer(),
         "cas" = character(),
         "chemical_name" = character(),
+        "dtxsid_ecotox" = character(),
         "CID" = integer(),
         "FOUND_BY" = character(),
-        "DTXSID" = character(),
+        "DTXSID_DTX" = character(),
         "PREFERRED_NAME" = character(),
         "CASRN" = character(),
         "INCHIKEY"  = character(),
@@ -609,7 +610,7 @@ format_chemical_properties <- function(object){
       object$cas <- as.character(object$cas)
       object$chemical_name <- as.character(object$chemical_name)
       object$FOUND_BY <-  as.character(object$FOUND_BY)
-      object$DTXSID <- as.character(object$DTXSID)
+      object$DTXSID_DTX <- as.character(object$DTXSID_DTX)
       object$CID <- as.integer(object$CID)
       object$PREFERRED_NAME <- as.character(object$PREFERRED_NAME)
       object$CASRN <- as.character(object$CASRN)

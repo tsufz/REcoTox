@@ -103,7 +103,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
                                    show_col_types = FALSE)
 
       message("[EcoToxR]:  Read results.")
-      #object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
+
       object$results <- read_delim(file = project$files[grep("results.txt", project$files)],
                                    delim = "|",
                                    na = c("NA","","NR","--","NC","/"),
@@ -119,18 +119,20 @@ create_project <- function(database_path, project_path, initalise_database_proje
     })
 
     #  Trim lists
-    names(object$chemicals)[which(names(object$chemicals) %like% "ecotox_group")] <- "compound_class"
-    names(object$chemicals)[which(names(object$chemicals) %like% "dtxsid")] <- "DTXSID"
+    object$chemicals <- object$chemicals %>%
+      rename(compound_class = ecotox_group,
+             dtxsid_ecotox = dtxsid)
 
     # harmonize name for query with chemicals
-    names(object$tests)[which(names(object$tests) %like% "test_cas")] <- "cas_number"
+    #
+    object$tests <- object$tests %>% rename(cas_number = test_cas)
 
     # Add a column with a CAS in ususal format
     object$chemicals <- object$chemicals %>% mutate(cas = paste0(substr(as.character(object$chemicals$cas_number), 1, nchar(as.character(object$chemicals$cas_number)) - 3), "-",
                                                                  substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)) - 2, nchar(as.character(object$chemicals$cas_number)) - 1), "-",
                                                                  substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)), nchar(as.character(object$chemicals$cas_number)))))
 
-    message("[EcoToxR]:  Saving the basic project in the database folder.")
+    message("[EcoToxR]:  Saving the default project in the database folder.")
     project$object <- object
     object <- NULL
     save(project, file = file.path(database_path,"project.RData"), compress = TRUE)
