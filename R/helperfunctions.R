@@ -9,26 +9,48 @@ build_final_list <- function(object = object){
   }
 
 
-  results <- results %>% select(cas_number, cas, chemical_name, compound_class, test_location, conc1_type, conc1_mean_op,
-                      conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max, conc1_unit,
-                      conc1_comments, concentration_mean, concentration_unit, obs_duration_mean,
-                      obs_duration_unit, test_id, reference_number, endpoint, endpoint_comments, effect,
-                      effect_comments, measurement, measurement_comments, organism_lifestage, common_name, latin_name, kingdom,
-                      phylum_division, subphylum_div, superclass, class, tax_order, family, genus, species, subspecies,
-                      variety, ecotox_group, result_id, reference_db, reference_type, author,
-                      title, source, publication_year, include_endpoint, include_species)
+  results <- results %>% select(cas_number, cas, chemical_name, compound_class,
+                                dtxsid, test_location, conc1_type, conc1_mean_op,
+                                conc1_mean, conc1_min_op, conc1_min, conc1_max_op,
+                                conc1_max, conc1_unit, conc1_comments,
+                                concentration_mean, concentration_unit, obs_duration_mean,
+                                obs_duration_unit, test_id, reference_number,
+                                endpoint, endpoint_comments, effect,
+                                effect_comments, measurement, measurement_comments,
+                                organism_lifestage, common_name, latin_name, kingdom,
+                                phylum_division, subphylum_div, superclass, class,
+                                tax_order, family, genus, species, subspecies,
+                                variety, ecotox_group, result_id, reference_db,
+                                reference_type, author, title, source,
+                                publication_year, include_endpoint, include_species) %>%
+    rename(DTXSID_ECOTOX = dtxsid)
 
 
-  results <- results %>% left_join(object$chemprop %>% select(cas_number, CID, DTXSID, PREFERRED_NAME, CASRN, SMILES, QSAR_READY_SMILES,
-                                                  INCHIKEY, MOLECULAR_FORMULA, AVERAGE_MASS,
-                                                  MONOISOTOPIC_MASS, LOG_S, LOG_S_AD,
-                                                  LOG_S_COMMENT, EXCLUDE, REMARKS),
+  results <- results %>% left_join(object$chemprop %>% select(cas_number,
+                                                              CID,
+                                                              DTXSID,
+                                                              PREFERRED_NAME,
+                                                              CASRN,
+                                                              SMILES,
+                                                              QSAR_READY_SMILES,
+                                                              INCHIKEY,
+                                                              MOLECULAR_FORMULA,
+                                                              AVERAGE_MASS,
+                                                              MONOISOTOPIC_MASS,
+                                                              LOG_S,
+                                                              LOG_S_AD,
+                                                              LOG_S_COMMENT,
+                                                              EXCLUDE,
+                                                              REMARKS),
                                                   by = "cas_number"
-  )
+  ) %>%
+    rename(DTXSID_DTX = DTXSID)
 
   # reorder list
 
-  results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID, DTXSID, PREFERRED_NAME, test_location,
+  results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID,
+                                DTXSID_DTX, DTXSID_ECOTOX
+                                PREFERRED_NAME, test_location,
                                 reference_number,
                                 conc1_type, conc1_mean_op, conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max,
                                 conc1_unit, conc1_comments, concentration_mean, concentration_unit, test_id,
