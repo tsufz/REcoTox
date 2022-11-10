@@ -1,12 +1,70 @@
-source("./R/helperfunctions.R")
-source("./R/Prepare_data.R")
-source("./R/Calculate_pivot.R")
+# Function to create the REcoTox project
+
+#' @title Create project
+#'
+#' @description
+#' This function initializes the \code{REcoTox} project in
+#' the pre-defined \code{project_folder} in \code{project_path}.
+#' It reads also the \code{EcoTox Knowledgebase} \emph{ascii}-files
+#' provided in \code{database_path} and prepares the
+#' \code{REcoTox} project.
+#'
+#' The prepared project is exported to \code{database_path} as default
+#' project for re-use in other projects based on the same \code{EcoTox}
+#' database version.
+#'
+#' @param database_path Path to the folder containing the expanded ascii files
+#' of the current \code{EcoTox Knowledgebase}.
+#'
+#' @param project_path Path to the folder to store the processed project files.
+#'
+#' @param initalise_database_project Logical value to initialize a new default
+#' \code{REcoTox} project in the \code{database_path}. The default value is
+#' \code{FALSE} (values: \code{c(TRUE, FALSE)}).
+#'
+# @param initialise_project Logical value zu initialize the project folder in
+# the \code{project_path}. The default value is \code{FALSE}
+# (values:\code\{c(TRUE, FALSE)}).
+#
+#' @param load_default Logical value to load the default project in the
+#' \code{database_path}. The default value is \code{FALSE} (values:
+#' \code{c(TRUE, FALSE)}. The parameter is ignored, if the \code{initialise_
+#' project} parameter is \code{TRUE}.
+#'
+#'
+#' @author Tobias Schulze
+#' @examples
+#' # Initialize a new default \code{REcoTox} project in
+#' # the \code{database_path} by reading the \code{
+#' # EcoTox Knowledgebase} \emph{asii}-files.
+#'
+#' \dontrun{create_project(database_path = database_path,
+#' project_path = project_path,
+#' initalise_database_project = TRUE)}
+#
+#' @examples
+#' # Initialize the \code{REcoTox} project folder in
+#' # the \code{project_path} and read the default
+#' # database from \code{database_path}.
+#
+#' \dontrun{create_project(database_path = database_path,
+#' project_path = project_path,
+#' initalise_project = TRUE,
+#' load_default = TRUE)}
+#
+#' @export
+#'
+
+
+#source("./R/helperfunctions.R")
+#source("./R/Prepare_data.R")
+#source("./R/calculate_pivot.R")
 #source("./R/EcoToxDB/Create_project.R")
-source("./R/Process_data.R")
-require(progress)
-require(webchem)
-require(tidyverse)
-require(data.table)
+#source("./R/process_data.R")
+#require(progress)
+#require(webchem)
+#require(tidyverse)
+#require(data.table)
 
 create_project <- function(database_path, project_path, initalise_database_project = FALSE,
                            initalise_project = FALSE, load_default = FALSE) {
@@ -45,7 +103,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
                                    show_col_types = FALSE)
 
       message("[EcoToxR]:  Read results.")
-      #object$results <- fread(project$files[grep("results.txt", project$files)], sep = "|", header = T, na.strings = c("NA","","NR","--","NC","/"), dec = ".", stringsAsFactors = FALSE)
+
       object$results <- read_delim(file = project$files[grep("results.txt", project$files)],
                                    delim = "|",
                                    na = c("NA","","NR","--","NC","/"),
@@ -61,18 +119,20 @@ create_project <- function(database_path, project_path, initalise_database_proje
     })
 
     #  Trim lists
-    names(object$chemicals)[which(names(object$chemicals) %like% "ecotox_group")] <- "compound_class"
-    names(object$chemicals)[which(names(object$chemicals) %like% "dtxsid")] <- "DTXSID"
+    object$chemicals <- object$chemicals %>%
+      rename(compound_class = ecotox_group,
+             dtxsid_ecotox = dtxsid)
 
     # harmonize name for query with chemicals
-    names(object$tests)[which(names(object$tests) %like% "test_cas")] <- "cas_number"
+    #
+    object$tests <- object$tests %>% rename(cas_number = test_cas)
 
     # Add a column with a CAS in ususal format
     object$chemicals <- object$chemicals %>% mutate(cas = paste0(substr(as.character(object$chemicals$cas_number), 1, nchar(as.character(object$chemicals$cas_number)) - 3), "-",
                                                                  substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)) - 2, nchar(as.character(object$chemicals$cas_number)) - 1), "-",
                                                                  substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)), nchar(as.character(object$chemicals$cas_number)))))
 
-    message("[EcoToxR]:  Saving the basic project in the database folder.")
+    message("[EcoToxR]:  Saving the default project in the database folder.")
     project$object <- object
     object <- NULL
     save(project, file = file.path(database_path,"project.RData"), compress = TRUE)
@@ -94,7 +154,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
       load_default = TRUE
     }
     if (exists("project") & load_default == FALSE) {
-      project$object$chemprop <- dplyr::tibble(create_chemical_properties(project$database_path))
+      project$object$chemprop <- tibble(create_chemical_properties(project$database_path))
       project$project_path <- suppressWarnings(normalizePath(project_path))
     }
   }

@@ -1,3 +1,4 @@
+#' @export
 # functions
 
   process_data <- function(project,
@@ -303,13 +304,13 @@
 
     species <- read_csv(file.path(project_path, paste0(tolower(ecotoxgroup), "_species_selection.csv")), show_col_types = FALSE)
 
-    if(!all(unique(species$include_species) %in% c(0, 1))) {
-      stop("[EcoToxR]:  Only 0 or 1 is allowed in the species selection filter. Check the species selection list and re-run the workflow.")
-    }
+    #if(!all(unique(species$include_species) %in% c(0, 1))) {
+    #  stop("[EcoToxR]:  Only 0 or 1 is allowed in the species selection filter. Check the species selection list and re-run the workflow.")
+    #}
 
-    if(unique(species$include_species) == 0) {
-      stop("[EcoToxR]:  There are only 0 in the species selection filter. Check the species selection list and re-run the workflow.")
-    }
+    #if(unique(species$include_species) == 0) {
+    #  stop("[EcoToxR]:  There are only 0 in the species selection filter. Check the species selection list and re-run the workflow.")
+    #}
 
     object$results_filtered <- object$results_filtered %>%
         left_join(species %>%
@@ -365,7 +366,6 @@
         object <- update_chemical_list(object, project_path = project_path, database_path = database_path)
       }
       object <- build_final_list(object)
-      object <- calculate_water_solubility(object)
       object <- calculate_hours(object)
 
       #object <- calculate_water_solubility(object)

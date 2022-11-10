@@ -9,26 +9,48 @@ build_final_list <- function(object = object){
   }
 
 
-  results <- results %>% select(cas_number, cas, chemical_name, compound_class, test_location, conc1_type, conc1_mean_op,
-                      conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max, conc1_unit,
-                      conc1_comments, concentration_mean, concentration_unit, obs_duration_mean,
-                      obs_duration_unit, test_id, reference_number, endpoint, endpoint_comments, effect,
-                      effect_comments, measurement, measurement_comments, organism_lifestage, common_name, latin_name, kingdom,
-                      phylum_division, subphylum_div, superclass, class, tax_order, family, genus, species, subspecies,
-                      variety, ecotox_group, result_id, reference_db, reference_type, author,
-                      title, source, publication_year, include_endpoint, include_species)
+  results <- results %>% select(cas_number, cas, chemical_name, compound_class,
+                                dtxsid_ecotox, test_location, conc1_type, conc1_mean_op,
+                                conc1_mean, conc1_min_op, conc1_min, conc1_max_op,
+                                conc1_max, conc1_unit, conc1_comments,
+                                concentration_mean, concentration_unit, obs_duration_mean,
+                                obs_duration_unit, test_id, reference_number,
+                                endpoint, endpoint_comments, effect,
+                                effect_comments, measurement, measurement_comments,
+                                organism_lifestage, common_name, latin_name, kingdom,
+                                phylum_division, subphylum_div, superclass, class,
+                                tax_order, family, genus, species, subspecies,
+                                variety, ecotox_group, result_id, reference_db,
+                                reference_type, author, title, source,
+                                publication_year, include_endpoint, include_species) %>%
+    rename(dtxsid_ecotox = dtxsid_ecotox)
 
 
-  results <- results %>% left_join(object$chemprop %>% select(cas_number, CID, DTXSID, PREFERRED_NAME, CASRN, SMILES, QSAR_READY_SMILES,
-                                                  INCHIKEY, MOLECULAR_FORMULA, AVERAGE_MASS,
-                                                  MONOISOTOPIC_MASS, LOG_S, LOG_S_AD,
-                                                  LOG_S_COMMENT, EXCLUDE, REMARKS),
+  results <- results %>% left_join(object$chemprop %>% select(cas_number,
+                                                              CID,
+                                                              DTXSID_DTX,
+                                                              PREFERRED_NAME,
+                                                              CASRN,
+                                                              SMILES,
+                                                              QSAR_READY_SMILES,
+                                                              INCHIKEY,
+                                                              MOLECULAR_FORMULA,
+                                                              AVERAGE_MASS,
+                                                              MONOISOTOPIC_MASS,
+                                                              LOG_S,
+                                                              LOG_S_AD,
+                                                              LOG_S_COMMENT,
+                                                              EXCLUDE,
+                                                              REMARKS),
                                                   by = "cas_number"
-  )
+  ) %>%
+    rename(DTXSID_DTX = DTXSID)
 
   # reorder list
 
-  results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID, DTXSID, PREFERRED_NAME, test_location,
+  results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID,
+                                dtxsid_ecotox, DTXSID_DTX,
+                                PREFERRED_NAME, test_location,
                                 reference_number,
                                 conc1_type, conc1_mean_op, conc1_mean, conc1_min_op, conc1_min, conc1_max_op, conc1_max,
                                 conc1_unit, conc1_comments, concentration_mean, concentration_unit, test_id,
@@ -57,7 +79,7 @@ calculate_hours <- function(object = object){
       mutate(obs_duration_mean = 24 * obs_duration_mean) %>%
       mutate(obs_duration_unit = "h")
 
-  results <- tibble(rbind(results_h, results_d))
+  results <- tibble(bind_rows(results_h, results_d))
 
   object$results <- results
 
@@ -66,17 +88,81 @@ calculate_hours <- function(object = object){
 }
 
 
-calculate_water_solubility <- function(object = object){
+convert_water_solubility <- function(object) {
 
-  message("[EcoToxR]:  Estimating the solubility domain")
+    message("[EcoToxR]:  Convert the solubility to mg/L.")
 
-  results <- object$results
+    object <- object %>%
+        rowwise() %>%
+        mutate(S_mg_L = if_else(!is.na(AVERAGE_MASS),
+                                true = signif(x = 10^LOG_S * 1000 * AVERAGE_MASS, digits = 4),
+                                false = NaN)) %>%
+        ungroup() %>%
+        rename(QSAR_S_AD = "LOG_S_AD", QSAR_S_COMMENT = "LOG_S_COMMENT")
+
+    return(object)
+
+}
+
+
+
+calculate_solubility_domain <- function(object = object, input_column_list = c("quantile_value_mg_L",
+                                                                               "min_value_mg_L",
+                                                                               "max_value_mg_L",
+                                                                               "mean_value_mg_L",
+                                                                               "geomean_value_mg_L",
+                                                                               "median_value_mg_L")){
+
+    message("[EcoToxR]:  Estimating the solubility domain.")
+
+    # add new dummy columns for the calculation
+    #
+    #
+    #
+    #
+    #
+
+    for (input_column in input_column_list) {
+
+        object <- object %>% ungroup()
+
+        object <- object %>%
+            mutate(input_data = as.vector(pull(object[, input_column]))) %>%
+            add_column(input_data_ad = NA) %>%
+            rowwise() %>%
+            mutate(input_data_ad = case_when(input_data <= S_mg_L ~ 3,
+
+                input_data > S_mg_L & input_data <= 10^5 * log10(S_mg_L) ~ 2,
+
+                input_data > S_mg_L & input_data > 10^5 * log10(S_mg_L) & input_data <= 10^10 * log10(S_mg_L) ~ 1,
+
+                input_data > 10^10 * log10(S_mg_L) ~ 0
+                )
+            )
+
+
+        ad_output_column = case_when(input_column == "quantile_value_mg_L" ~ "quantile_value_S_AD",
+                                     input_column == "min_value_mg_L" ~ "min_value_S_AD",
+                                     input_column == "max_value_mg_L" ~ "max_value_S_AD",
+                                     input_column == "mean_value_mg_L" ~ "mean_value_S_AD",
+                                     input_column == "geomean_value_mg_L" ~ "geomean_value_S_AD",
+                                     input_column == "median_value_mg_L" ~ "median_value_S_AD")
+
+
+        object <- object %>% select(., -input_data) %>%
+            rename(!!ad_output_column := input_data_ad) %>%
+            ungroup()
+
+    }
+
+
+  #results <- object$results
 
   # Calculate S in mg/L
-  results <- results %>%
-      rowwise() %>%
-      mutate(S_mg_L = 10^LOG_S * AVERAGE_MASS * 1000) %>%
-      filter(is.na(EXCLUDE)) # OPERA output g/L
+  #results <- results %>%
+  #    rowwise() %>%
+  #    mutate(S_mg_L = 10^LOG_S * AVERAGE_MASS * 1000) %>%
+  #    filter(is.na(EXCLUDE)) # OPERA output g/L
 
   # Domain estimate solubility domain (based on ideas in ChemProp)
   # Case 1: if EC <= Sw -> 3
@@ -98,34 +184,18 @@ calculate_water_solubility <- function(object = object){
 
 # Opera
 #
-  results <- results %>%
-      mutate(S_mg_L_AD = NA)
-  results <- results %>%
-      rowwise() %>%
-      mutate(
 
-          S_mg_L_AD = case_when(
 
-              is.na(EXCLUDE) & concentration_mean <= S_mg_L ~ 3,
-
-              is.na(EXCLUDE) & concentration_mean > S_mg_L & concentration_mean <= 10^5 * log10(S_mg_L) ~ 2,
-
-              is.na(EXCLUDE) & concentration_mean > S_mg_L & concentration_mean > 10^5 * log10(S_mg_L) & concentration_mean <= 10^10 * log10(S_mg_L) ~ 1,
-
-              is.na(EXCLUDE) & concentration_mean > 10^10 * log10(S_mg_L) ~ 0
-
-          )
-      )
 
 
   # Finally exclude if no meaningful data is available
 
-  results <- results %>%
-      rowwise() %>%
-      mutate(
-              EXCLUDE = case_when(is.na(EXCLUDE) & is.na(concentration_mean) ~ 1)
-
-      )
+  # results <- results %>%
+  #     rowwise() %>%
+  #     mutate(
+  #             EXCLUDE = case_when(is.na(EXCLUDE) & is.na(concentration_mean) ~ 1)
+  #
+  #     )
 
 # this is only for debugging
   # # If concentration_mean is <= Sw, the
@@ -168,7 +238,7 @@ calculate_water_solubility <- function(object = object){
   #
   # }
   # #pb$terminate()
-  object$results <- results
+  # object$results <- results
   return(object)
 }
 
@@ -186,7 +256,7 @@ export_chemical_list <- function(object, project_path){
   chemical_list <- object$results_filtered %>%
       select(cas_number, cas, chemical_name) %>%
       unique() %>%
-      left_join(object$chemprop %>% select(cas_number, CID, FOUND_BY, DTXSID, PREFERRED_NAME, CASRN, INCHIKEY,
+      left_join(object$chemprop %>% select(cas_number, dtxsid_ecotox, CID, FOUND_BY, DTXSID_DTX, PREFERRED_NAME, CASRN, INCHIKEY,
                                            IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA, AVERAGE_MASS,
                                            MONOISOTOPIC_MASS, QSAR_READY_SMILES, QC_LEVEL, LOG_S, LOG_S_AD, LOG_S_COMMENT,
                                            EXCLUDE, REMARKS),
@@ -211,8 +281,8 @@ export_exclude_list <- function(object, project_path){
                                                                        "latin_name", "author", "title", "source", "publication_year"),
                                                                     with = FALSE])
   object$results_filtered_exclude_list <- data.table(object$results_filtered_exclude_list[order(chemical_name)])
-  fwrite(data.table(unique(object$results_filtered_exclude_list$cas)), suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list_cas.csv")))), sep = ",", dec = ".")
-  fwrite(object$results_filtered_exclude_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv")))), sep = ",", dec = ".")
+  write_csv(data.table(unique(object$results_filtered_exclude_list$cas)), suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list_cas.csv")))), na = "NA")
+  write_csv(object$results_filtered_exclude_list, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mortality_filtered_exclude_list.csv")))), na = "NA")
   return(object)
 }
 
@@ -240,7 +310,7 @@ remove_excluded_chemicals <- function(object, project_path){
 
   object$results_filtered <- object$results_filtered  %>% group_by(cas_number) %>% filter(cas_number %in% inclusion_list)
 
-  write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_included_by_chemical.csv")))
+  write_csv(object$results_filtered, file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_included_by_chemical.csv")), na = "NA")
 
   if(object$results_excluded_by_chemical %>% nrow() > 0){
     write_csv(object$results_excluded, suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_results_excluded_by_chemical.csv")))), na = "NA")
@@ -309,7 +379,7 @@ query_pubchem <- function(object = object) {
 
             pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
-            pubchem <- rbind(pubchem, pubchem_new_row)
+            pubchem <- bind_rows(pubchem, pubchem_new_row)
 
             next()
 
@@ -349,7 +419,7 @@ query_pubchem <- function(object = object) {
 
                 pubchem_new_row <- pubchem_new_row %>% add_row() %>% mutate(cas_number = cas_numb, cas = casrn, FOUND_BY = "No data retrieved from PubChem")
 
-                pubchem <- rbind(pubchem, pubchem_new_row)
+                pubchem <- bind_rows(pubchem, pubchem_new_row)
 
                 next()
             }
@@ -416,7 +486,7 @@ query_pubchem <- function(object = object) {
 
 
     # recombine lists
-    chemical_list <- rbind(chemical_list_with_SMILES, chemicals_update)
+    chemical_list <- bind_rows(chemical_list_with_SMILES, chemicals_update)
 
 
     # add comments and exclude those entries with remaining gaps
@@ -502,9 +572,10 @@ create_chemical_properties <- function(database_path){
         "cas_number" = integer(),
         "cas" = character(),
         "chemical_name" = character(),
+        "dtxsid_ecotox" = character(),
         "CID" = integer(),
         "FOUND_BY" = character(),
-        "DTXSID" = character(),
+        "DTXSID_DTX" = character(),
         "PREFERRED_NAME" = character(),
         "CASRN" = character(),
         "INCHIKEY"  = character(),
@@ -539,7 +610,7 @@ format_chemical_properties <- function(object){
       object$cas <- as.character(object$cas)
       object$chemical_name <- as.character(object$chemical_name)
       object$FOUND_BY <-  as.character(object$FOUND_BY)
-      object$DTXSID <- as.character(object$DTXSID)
+      object$DTXSID_DTX <- as.character(object$DTXSID_DTX)
       object$CID <- as.integer(object$CID)
       object$PREFERRED_NAME <- as.character(object$PREFERRED_NAME)
       object$CASRN <- as.character(object$CASRN)
@@ -572,7 +643,7 @@ export_mol_units <- function(object, project_path = project$project_path) {
 
   chemprop <- object$results_filtered %>%
       filter(conc1_unit %like% "mol/L") %>%
-      select(cas_number, cas, chemical_name) %>%
+      select(cas_number, cas, chemical_name, dtxsid_ecotox) %>%
       add_column("AVERAGE_MASS" = NA)
 
   if(nrow(object$chemprop) > 0) {
@@ -595,9 +666,10 @@ export_mol_units <- function(object, project_path = project$project_path) {
       group_by(cas_number) %>%
       unique()
 
-  chemprop <- chemprop %>%
-      group_by(FOUND_BY) %>%
-      arrange(desc(FOUND_BY))
+
+  #chemprop <- chemprop %>%
+  #    group_by(FOUND_BY) %>%
+  #    arrange(desc(FOUND_BY))
 
   write_csv(x = chemprop, file = file_name, col_names = TRUE)
 
@@ -649,7 +721,7 @@ convert_units <- function(object, sample_size = NA) {
 
   object <- object %>% mutate(concentration_mean = conc1_mean, concentration_unit = conc1_unit)
 
-  object <- rbind(object %>% filter(!is.na(concentration_mean)),
+  object <- bind_rows(object %>% filter(!is.na(concentration_mean)),
                   object %>% filter(is.na(concentration_mean)) %>%
                       rowwise() %>%
                       mutate(concentration_mean = if_else(condition = is.na(concentration_mean),
@@ -882,4 +954,52 @@ save_project <- function(object = object, save_project_steps = save_project_step
          file = file.path(project_path, paste0(tolower(ecotoxgroup), "_state", state, ".RData")),
          compress = TRUE)
   }
+}
+
+get_git <- function(){
+
+
+  #chemical_list <- read_csv("path_to_project/algae_chemical_list.csv")
+
+  length_progressbar <- nrow(chemical_list)
+  pb <- progress::progress_bar$new(
+    format = "[EcoToxR]:  Retrival of PubChem data [:bar] :percent ETA: :eta",
+    total = length_progressbar, clear = FALSE, width = 80)
+
+  for (i in 1:nrow(chemical_list)){
+
+    pb$tick()
+
+    if (is.na(chemical_list$CID[i])){
+      # lookup for CID based on CASRN
+      casrn <- chemical_list[i, "CASRN"][[1]]
+      pccid <- get_cid(casrn)
+      cas_number <- chemical_list[i, "cas_number"][[1]]
+      pccid <- pccid %>% mutate(across(cid, as.integer)) %>% mutate(cas_number = cas_number)
+
+
+      if (is.na(pccid$cid[[1]])) {
+        next()
+
+      } else if (nrow(pccid) > 1) {
+        # Us the first entry in PubChem only
+        pccid <- pccid %>% arrange(cid)
+        pccid <- pccid %>% slice_min(cid, n = 1)
+
+      }
+
+
+      chemical_list[i, "CID"] <- pccid[[2]]
+
+      # write_csv(chemical_list, "c:/TEMP/EcoToxDB/test/algae_chemical_list.csv")
+
+    } else {
+      next()
+    }
+
+  }
+
+
+  write_csv(chemical_list, "path_to_project/algae_chemical_list.csv")
+
 }
