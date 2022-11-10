@@ -643,7 +643,7 @@ export_mol_units <- function(object, project_path = project$project_path) {
 
   chemprop <- object$results_filtered %>%
       filter(conc1_unit %like% "mol/L") %>%
-      select(cas_number, cas, chemical_name) %>%
+      select(cas_number, cas, chemical_name, dtxsid_ecotox) %>%
       add_column("AVERAGE_MASS" = NA)
 
   if(nrow(object$chemprop) > 0) {
@@ -666,9 +666,10 @@ export_mol_units <- function(object, project_path = project$project_path) {
       group_by(cas_number) %>%
       unique()
 
-  chemprop <- chemprop %>%
-      group_by(FOUND_BY) %>%
-      arrange(desc(FOUND_BY))
+
+  #chemprop <- chemprop %>%
+  #    group_by(FOUND_BY) %>%
+  #    arrange(desc(FOUND_BY))
 
   write_csv(x = chemprop, file = file_name, col_names = TRUE)
 
