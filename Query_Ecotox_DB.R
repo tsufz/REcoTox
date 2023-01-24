@@ -16,10 +16,10 @@ set.seed(4711456)
 # A comprehensive name is for example "EcoTox_Fish_EC50"
 
 
-database_path <- "path_to_ecotox_unzipped_ascii_files"
+database_path <- "c:/Data/UFZ_DATA/UFZ_Cloud/Databases/Ecotox/current"
 
 # Declare the project folder to store the files of your query
-project_path <- "path_to_project_folder"
+project_path <- "c:/temp/Fish_EcoTox_220915_XX50"
 
 # Declare the ecotox group ("Species Group")
 
@@ -28,7 +28,7 @@ project_path <- "path_to_project_folder"
 # create the project
 #
 project <- create_project(database_path, project_path,
-                          initalise_database_project = FALSE, # create the basic project from current ASCII files in DB folder
+                          initalise_database_project = TRUE, # create the basic project from current ASCII files in DB folder
                           initalise_project = TRUE, # initializes the project folder
                           load_default = TRUE) # loads the default project in the project folder in the memory
 
@@ -43,9 +43,9 @@ project <- create_project(database_path, project_path,
 # Step 1: Run the first data preparation step to create the initial project
 
 project <- prepare_data(project = project,
-                        load_initial_project = TRUE,
+                        load_initial_project = FALSE,
                         new_project_path = NA,
-                        save_project = FALSE
+                        save_project = TRUE
                         )
 
 # Reload the results of the first step
@@ -70,7 +70,7 @@ max_d = 5 # maximum days
 max_m = 7200 # maximum minutes
 
 # species base settings
-ecotoxgroup = "Algae" # c("Algae", "Crustacean", "Fish")
+ecotoxgroup = "Fish" # c("Algae", "Crustacean", "Fish")
 species_selection = "all" # c("all", "manual", "standard_test_species")
 habitat = "Water" #c("Non-Soil","Water","Soil")
 kingdoms = NA # vector of specific algae kingdoms: c("Chromista","Plantae","Monera")
@@ -132,7 +132,7 @@ project <- process_data(project, save_project_steps = FALSE
 # The update is recommended, if the chemical list was edited / updated
 # Optional: Save the project to the project_folder
 
-project <- process_data(project, save_project_steps = FALSE, update_chemicals = FALSE)
+project <- process_data(project, save_project_steps = FALSE, update_chemicals = TRUE)
 
 
 #load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
