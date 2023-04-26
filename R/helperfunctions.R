@@ -39,6 +39,7 @@ build_final_list <- function(object = object){
                                                               MONOISOTOPIC_MASS,
                                                               LOG_S,
                                                               LOG_S_AD,
+                                                              S_AD_index,
                                                               LOG_S_COMMENT,
                                                               EXCLUDE,
                                                               REMARKS),
@@ -59,7 +60,7 @@ build_final_list <- function(object = object){
                                 phylum_division, subphylum_div, superclass, class, tax_order, family,
                                 genus, species, subspecies, variety, ecotox_group, chemical_name,
                                 compound_class, CASRN, SMILES, INCHIKEY, QSAR_READY_SMILES, MOLECULAR_FORMULA, AVERAGE_MASS,
-                                MONOISOTOPIC_MASS, LOG_S, LOG_S_AD, LOG_S_COMMENT, reference_db, result_id,
+                                MONOISOTOPIC_MASS, LOG_S, LOG_S_AD, S_AD_index, LOG_S_COMMENT, reference_db, result_id,
                                 reference_type, author, title, source, publication_year, include_endpoint, include_species)
   object$results <- results
   return(object)
@@ -258,7 +259,7 @@ export_chemical_list <- function(object, project_path){
       left_join(object$chemprop %>% select(cas_number, dtxsid_ecotox, PubChem_CID, FOUND_BY, DTXSID_DTX, PREFERRED_NAME, CASRN, INCHIKEY,
                                            IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA, AVERAGE_MASS,
                                            MONOISOTOPIC_MASS, QSAR_READY_SMILES, QC_LEVEL, LOG_S, LOG_S_AD,
-                                           LOG_S_COMMENT, EXCLUDE, REMARKS),
+                                           S_AD_index, LOG_S_COMMENT, EXCLUDE, REMARKS),
                 by = "cas_number") %>%
       arrange(FOUND_BY)
 
@@ -588,6 +589,7 @@ create_chemical_properties <- function(database_path){
         "QC_LEVEL" = integer(),
         "LOG_S" = numeric(),
         "LOG_S_AD" = integer(),
+        "S_AD_index" = numeric(),
         "LOG_S_COMMENT" = character(),
         "EXCLUDE" = integer(),
         "REMARKS" = character()
@@ -625,6 +627,7 @@ format_chemical_properties <- function(object){
       object$QC_LEVEL <- as.integer(object$QC_LEVEL)
       object$LOG_S <- as.numeric(object$LOG_S)
       object$LOG_S_AD <- as.integer(object$LOG_S_AD)
+      object$S_AD_index <- as.numeric(object$S_AD_index)
       object$LOG_S_COMMENT <- as.character(object$LOG_S_COMMENT)
       object$EXCLUDE <- as.numeric(object$EXCLUDE)
       object$REMARKS <- as.character(object$REMARKS)

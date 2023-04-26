@@ -107,10 +107,10 @@ message("[EcoToxR]:  Summarizing the data.")
                                                           dtxsid_ecotox,
                                                           LOG_S,
                                                           LOG_S_AD,
+                                                          S_AD_index,
                                                           LOG_S_COMMENT,
                                                           AVERAGE_MASS,
                                                           DTXSID_DTX,
-                                                          dtxsid_ecotox,
                                                           PubChem_CID,
                                                           CASRN,
                                                           SMILES,
@@ -145,13 +145,13 @@ message("[EcoToxR]:  Summarizing the data.")
                                    "median_value_S_AD",
                                    "S_mg_L",
                                    "QSAR_S_AD",
+                                   "S_AD_index",
                                    "QSAR_S_COMMENT",
                                    "duration_min_h",
                                    "duration_max_h",
                                    "result_count",
                                    "reference_count",
                                    "DTXSID_DTX",
-                                   "dtxsid_ecotox",
                                    "PubChem_CID",
                                    "CASRN",
                                    "SMILES",
@@ -167,8 +167,9 @@ message("[EcoToxR]:  Summarizing the data.")
                                    "result_id_list",
                                    "duration_list"
                                    ) %>%
-      group_by(PREFERRED_NAME) %>%
-      arrange(.by_group = TRUE)
+      group_by(chemical_name) %>%
+      arrange(.by_group = TRUE) %>%
+      ungroup()
 
 
   message("[EcoToxR]:  Saving the pivot table.")
