@@ -27,7 +27,7 @@ build_final_list <- function(object = object){
 
 
   results <- results %>% left_join(object$chemprop %>% select(cas_number,
-                                                              CID,
+                                                              PubChem_CID,
                                                               DTXSID_DTX,
                                                               PREFERRED_NAME,
                                                               CASRN,
@@ -39,7 +39,6 @@ build_final_list <- function(object = object){
                                                               MONOISOTOPIC_MASS,
                                                               LOG_S,
                                                               LOG_S_AD,
-                                                              AD_INDEX_WS,
                                                               LOG_S_COMMENT,
                                                               EXCLUDE,
                                                               REMARKS),
@@ -48,7 +47,7 @@ build_final_list <- function(object = object){
 
   # reorder list
 
-  results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, CID,
+  results <- results %>% select(EXCLUDE, REMARKS, cas_number, cas, PubChem_CID,
                                 dtxsid_ecotox, DTXSID_DTX,
                                 PREFERRED_NAME, test_location,
                                 reference_number,
@@ -60,7 +59,7 @@ build_final_list <- function(object = object){
                                 phylum_division, subphylum_div, superclass, class, tax_order, family,
                                 genus, species, subspecies, variety, ecotox_group, chemical_name,
                                 compound_class, CASRN, SMILES, INCHIKEY, QSAR_READY_SMILES, MOLECULAR_FORMULA, AVERAGE_MASS,
-                                MONOISOTOPIC_MASS, LOG_S, LOG_S_AD, AD_INDEX_WS, LOG_S_COMMENT, reference_db, result_id,
+                                MONOISOTOPIC_MASS, LOG_S, LOG_S_AD, LOG_S_COMMENT, reference_db, result_id,
                                 reference_type, author, title, source, publication_year, include_endpoint, include_species)
   object$results <- results
   return(object)
@@ -256,9 +255,9 @@ export_chemical_list <- function(object, project_path){
   chemical_list <- object$results_filtered %>%
       select(cas_number, cas, chemical_name) %>%
       unique() %>%
-      left_join(object$chemprop %>% select(cas_number, dtxsid_ecotox, CID, FOUND_BY, DTXSID_DTX, PREFERRED_NAME, CASRN, INCHIKEY,
+      left_join(object$chemprop %>% select(cas_number, dtxsid_ecotox, PubChem_CID, FOUND_BY, DTXSID_DTX, PREFERRED_NAME, CASRN, INCHIKEY,
                                            IUPAC_NAME, SMILES, INCHI_STRING, MOLECULAR_FORMULA, AVERAGE_MASS,
-                                           MONOISOTOPIC_MASS, QSAR_READY_SMILES, QC_LEVEL, LOG_S, LOG_S_AD, AD_INDEX_WS,
+                                           MONOISOTOPIC_MASS, QSAR_READY_SMILES, QC_LEVEL, LOG_S, LOG_S_AD,
                                            LOG_S_COMMENT, EXCLUDE, REMARKS),
                 by = "cas_number") %>%
       arrange(FOUND_BY)
@@ -573,7 +572,7 @@ create_chemical_properties <- function(database_path){
         "cas" = character(),
         "chemical_name" = character(),
         "dtxsid_ecotox" = character(),
-        "CID" = integer(),
+        "PubChem_CID" = integer(),
         "FOUND_BY" = character(),
         "DTXSID_DTX" = character(),
         "PREFERRED_NAME" = character(),
@@ -589,7 +588,6 @@ create_chemical_properties <- function(database_path){
         "QC_LEVEL" = integer(),
         "LOG_S" = numeric(),
         "LOG_S_AD" = integer(),
-        "AD_INDEX_WS" = character(),
         "LOG_S_COMMENT" = character(),
         "EXCLUDE" = integer(),
         "REMARKS" = character()
@@ -610,9 +608,10 @@ format_chemical_properties <- function(object){
       suppressWarnings(object$cas_number <- as.integer(object$cas_number))
       object$cas <- as.character(object$cas)
       object$chemical_name <- as.character(object$chemical_name)
+      object$dtxsid_ecotox <- as.character(object$dtxsid_ecotox)
       object$FOUND_BY <-  as.character(object$FOUND_BY)
       object$DTXSID_DTX <- as.character(object$DTXSID_DTX)
-      object$CID <- as.integer(object$CID)
+      object$PubChem_CID <- as.integer(object$PubChem_CID)
       object$PREFERRED_NAME <- as.character(object$PREFERRED_NAME)
       object$CASRN <- as.character(object$CASRN)
       object$INCHIKEY <- as.character(object$INCHIKEY)
@@ -626,7 +625,6 @@ format_chemical_properties <- function(object){
       object$QC_LEVEL <- as.integer(object$QC_LEVEL)
       object$LOG_S <- as.numeric(object$LOG_S)
       object$LOG_S_AD <- as.integer(object$LOG_S_AD)
-      object$AD_INDEX_WS <- as.character(object$AD_INDEX_WS)
       object$LOG_S_COMMENT <- as.character(object$LOG_S_COMMENT)
       object$EXCLUDE <- as.numeric(object$EXCLUDE)
       object$REMARKS <- as.character(object$REMARKS)
@@ -759,7 +757,7 @@ convert_units <- function(object, sample_size = NA) {
   # this assumes that only some records are reported in log(LC50)
   log <- "^.log.[A-Z]*[0-9]*?$"
 
-  if (nrow(object %>% filter(endpoint %like% log)) > 0) {endpoint
+  if (nrow(object %>% filter(endpoint %like% log)) > 0) {
 
       object <- object %>% rowwise() %>% mutate(concentration_mean = if_else(condition = endpoint %like% log,
                                                                              true = 10^concentration_mean,
@@ -972,21 +970,21 @@ get_git <- function(){
 
     pb$tick()
 
-    if (is.na(chemical_list$CID[i])){
+    if (is.na(chemical_list$PubChem_CID[i])){
       # lookup for CID based on CASRN
       casrn <- chemical_list[i, "CASRN"][[1]]
       pccid <- get_cid(casrn)
       cas_number <- chemical_list[i, "cas_number"][[1]]
-      pccid <- pccid %>% mutate(across(cid, as.integer)) %>% mutate(cas_number = cas_number)
+      pccid <- pccid %>% mutate(across(CID, as.integer)) %>% mutate(cas_number = cas_number)
 
 
-      if (is.na(pccid$cid[[1]])) {
+      if (is.na(pccid$CID[[1]])) {
         next()
 
       } else if (nrow(pccid) > 1) {
         # Us the first entry in PubChem only
-        pccid <- pccid %>% arrange(cid)
-        pccid <- pccid %>% slice_min(cid, n = 1)
+        pccid <- pccid %>% arrange(PubChem_CID)
+        pccid <- pccid %>% slice_min(PubChem_CID, n = 1)
 
       }
 

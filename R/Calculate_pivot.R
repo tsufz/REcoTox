@@ -15,7 +15,6 @@ message("[EcoToxR]:  Summarizing the data.")
 
   results_select <- results %>% filter(concentration_unit == "mg/L", concentration_mean > 0, is.na(EXCLUDE))
 
-
   #results_select <- results[which(results[, concentration_unit %like% "mg/L"])]
   #results_select <- results_select[which(results_select[, concentration_unit > 0])]
   #results_select <- results_select[!which(results_select[, EXCLUDE == 1])]
@@ -105,12 +104,14 @@ message("[EcoToxR]:  Summarizing the data.")
 
   results_pivot <- results_pivot %>% left_join(chemical_list %>%
                                                    select(cas_number,
+                                                          dtxsid_ecotox,
                                                           LOG_S,
                                                           LOG_S_AD,
                                                           LOG_S_COMMENT,
                                                           AVERAGE_MASS,
-                                                          DTXSID,
-                                                          CID,
+                                                          DTXSID_DTX,
+                                                          dtxsid_ecotox,
+                                                          PubChem_CID,
                                                           CASRN,
                                                           SMILES,
                                                           INCHIKEY,
@@ -127,6 +128,7 @@ message("[EcoToxR]:  Summarizing the data.")
 
   #Resample the output
   results_pivot <- results_pivot %>% select("cas_number",
+                                   "chemical_name",
                                    "PREFERRED_NAME",
                                    "quantile",
                                    "quantile_value_mg_L",
@@ -148,8 +150,9 @@ message("[EcoToxR]:  Summarizing the data.")
                                    "duration_max_h",
                                    "result_count",
                                    "reference_count",
-                                   "DTXSID",
-                                   "CID",
+                                   "DTXSID_DTX",
+                                   "dtxsid_ecotox",
+                                   "PubChem_CID",
                                    "CASRN",
                                    "SMILES",
                                    "INCHIKEY",

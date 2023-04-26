@@ -56,15 +56,15 @@
 #'
 
 
-#source("./R/helperfunctions.R")
-#source("./R/Prepare_data.R")
-#source("./R/calculate_pivot.R")
-#source("./R/EcoToxDB/Create_project.R")
-#source("./R/process_data.R")
-#require(progress)
-#require(webchem)
-#require(tidyverse)
-#require(data.table)
+source("./R/helperfunctions.R")
+source("./R/Prepare_data.R")
+source("./R/calculate_pivot.R")
+#source("./R/Create_project.R")
+source("./R/process_data.R")
+require(progress)
+require(webchem)
+require(tidyverse)
+require(data.table)
 
 create_project <- function(database_path, project_path, initalise_database_project = FALSE,
                            initalise_project = FALSE, load_default = FALSE) {
@@ -82,21 +82,21 @@ create_project <- function(database_path, project_path, initalise_database_proje
     message("[EcoToxR]:  Read the Ecotox Knowledgebase ASCII files.")
     suppressWarnings({
       message("[EcoToxR]:  Read tests")
-      object$tests <- read_delim(file = project$files[grep("tests.txt", project$files)],
+      object$tests <- readr::read_delim(file = project$files[grep("tests.txt", project$files)],
                                  delim = "|", na = c("NA","","NR","--","NC","/"),
                                  quote = "\"",
                                  show_col_types = FALSE)
 
       message("[EcoToxR]:  Read chemicals.")
-      object$chemicals <- read_delim(file = project$files[grep("chemicals.txt", project$files)],
+      object$chemicals <- readr::read_delim(file = project$files[grep("chemicals.txt", project$files)],
                                      delim = "|", na = c("NA","","NR","--","NC","/"),
                                      quote = "\"",
                                      show_col_types = FALSE)
 
-      object$chemprop <- tibble(create_chemical_properties(project$database_path))
+      object$chemprop <- tibble::tibble(create_chemical_properties(project$database_path))
 
       message("[EcoToxR]:  Read species.")
-      object$species <- read_delim(file = project$files[grep("species.txt", project$files)],
+      object$species <- readr::read_delim(file = project$files[grep("species.txt", project$files)],
                                    delim = "|",
                                    na = c("NA","","NR","--","NC","/"),
                                    quote = "\"",
@@ -104,14 +104,14 @@ create_project <- function(database_path, project_path, initalise_database_proje
 
       message("[EcoToxR]:  Read results.")
 
-      object$results <- read_delim(file = project$files[grep("results.txt", project$files)],
+      object$results <- readr::read_delim(file = project$files[grep("results.txt", project$files)],
                                    delim = "|",
                                    na = c("NA","","NR","--","NC","/"),
                                    quote = "\"",
                                    show_col_types = FALSE)
 
       message("[EcoToxR]:  Read references.")
-      object$references <- read_delim(file = project$files[grep("references.txt", project$files)],
+      object$references <- readr::read_delim(file = project$files[grep("references.txt", project$files)],
                                       delim = "|",
                                       na = c("NA","","NR","--","NC","/"),
                                       quote = "\"",
@@ -154,7 +154,7 @@ create_project <- function(database_path, project_path, initalise_database_proje
       load_default = TRUE
     }
     if (exists("project") & load_default == FALSE) {
-      project$object$chemprop <- tibble(create_chemical_properties(project$database_path))
+      project$object$chemprop <- tibble::tibble(create_chemical_properties(project$database_path))
       project$project_path <- suppressWarnings(normalizePath(project_path))
     }
   }
