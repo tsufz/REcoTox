@@ -19,7 +19,7 @@ prepare_data <- function(project,
         .tempenv$project$project_path <- normalizePath(project_path)
       }
 
-      if ( isTRUE(reread_chemical_list) ) {
+      if (isTRUE(reread_chemical_list) ) {
           .tempenv$project <- read_csv(file.path(database_path, "chemical_properties.csv"))
       }
 
@@ -39,10 +39,9 @@ prepare_data <- function(project,
   message("[EcoToxR]:  Merging tests, results and chemicals.")
 
   # Fix field type issues
-  object$chemicals <- suppressWarnings(object$chemicals %>% mutate(cas_number = as.integer(cas_number)))
-  object$tests <- suppressWarnings(object$tests %>% mutate(cas_number = as.integer(cas_number), reference_number = as.integer(reference_number), test_id = as.integer(test_id)))
-  object$results <- suppressWarnings(object$results %>% mutate(test_id = as.integer(test_id)))
-  object$references <- suppressWarnings(object$references %>% mutate(reference_number = as.integer(reference_number)))
+  object$tests <- suppressWarnings(object$tests %>% mutate(cas_number = as.double(cas_number), reference_number = as.double(reference_number), test_id = as.double(test_id)))
+  object$results <- suppressWarnings(object$results %>% mutate(test_id = as.double(test_id), result_id = as.double(result_id)))
+  object$references <- suppressWarnings(object$references %>% mutate(reference_number = as.double(reference_number)))
 
   # Merge the raw tables
 

@@ -83,13 +83,15 @@ create_project <- function(database_path, project_path, initalise_database_proje
     suppressWarnings({
       message("[EcoToxR]:  Read tests")
       object$tests <- readr::read_delim(file = project$files[grep("tests.txt", project$files)],
-                                 delim = "|", na = c("NA","","NR","--","NC","/"),
+                                 delim = "|",
+                                 na = c("NA","","NR","--","NC","/"),
                                  quote = "\"",
                                  show_col_types = FALSE)
 
       message("[EcoToxR]:  Read chemicals.")
       object$chemicals <- readr::read_delim(file = project$files[grep("chemicals.txt", project$files)],
-                                     delim = "|", na = c("NA","","NR","--","NC","/"),
+                                     delim = "|",
+                                     na = c("NA","","NR","--","NC","/"),
                                      quote = "\"",
                                      show_col_types = FALSE)
 

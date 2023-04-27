@@ -300,11 +300,13 @@ remove_excluded_chemicals <- function(object, project_path){
   }
   inclusion_list <- chemical_list %>%
       filter(is.na(EXCLUDE)) %>%
-      pull(cas_number)
+      pull(cas_number) %>%
+      as.double()
 
   exclusion_list <- chemical_list %>%
       filter(EXCLUDE == 1) %>%
-      pull(cas_number)
+      pull(cas_number) %>%
+      as.double()
 
   object$results_excluded_by_chemical <- object$results_filtered %>% group_by(cas_number) %>% filter(cas_number %in% exclusion_list)
 
@@ -327,7 +329,7 @@ query_pubchem <- function(object = object) {
     # get information from pubchem to fill gaps of DTXSID query
     #
     pubchem <- tibble(
-        "cas_number" = integer(),
+        "cas_number" = double(),
         "cas" = character(),
         "FOUND_BY" = character(),
         "PREFERRED_NAME" = character(),
@@ -355,13 +357,13 @@ query_pubchem <- function(object = object) {
         # lookup for CID based on CASRN
         casrn <- chemical_list_no_SMILES[i, "cas"][[1]]
         pccid <- get_cid(casrn)
-        cas_number <- chemical_list_no_SMILES[i, "cas_number"][[1]]
-        pccid <- pccid %>% mutate(across(cid, as.integer)) %>% mutate(cas_number = cas_number)
+        cas_number <- chemical_list_no_SMILES[i, "cas_number"][[1]] %>% as.double()
+        pccid <- pccid %>% mutate(across(cid, as.double)) %>% mutate(cas_number = cas_number)
 
 
         if (is.na(pccid$cid[[1]])) {
             pubchem_new_row <- tibble(
-                "cas_number" = integer(),
+                "cas_number" = double(),
                 "cas" = character(),
                 "FOUND_BY" = character(),
                 "PREFERRED_NAME" = character(),
@@ -401,7 +403,7 @@ query_pubchem <- function(object = object) {
             if (is.na(pc_props$CanonicalSMILES)) {
 
                 pubchem_new_row <- tibble(
-                    "cas_number" = integer(),
+                    "cas_number" = double(),
                     "cas" = character(),
                     "FOUND_BY" = character(),
                     "PREFERRED_NAME" = character(),
@@ -470,7 +472,7 @@ query_pubchem <- function(object = object) {
     }
 
     # Output of webchem is character, needs to be fixed here.
-    pubchem <- pubchem %>% mutate(across(cas_number, as.integer)) %>% mutate(across(AVERAGE_MASS:MONOISOTOPIC_MASS, as.double))
+    pubchem <- pubchem %>% mutate(across(cas_number, as.double)) %>% mutate(across(AVERAGE_MASS:MONOISOTOPIC_MASS, as.double))
 
     chemicals_update <- chemical_list_no_SMILES %>% inner_join(pubchem %>% select(cas_number))
 
@@ -569,11 +571,11 @@ create_chemical_properties <- function(database_path){
     message("[EcoToxR]:  The file is stored in the current database folder and will be copied to the project folder for backup.")
 
     object <- tibble(
-        "cas_number" = integer(),
+        "cas_number" = double(),
         "cas" = character(),
         "chemical_name" = character(),
         "dtxsid_ecotox" = character(),
-        "PubChem_CID" = integer(),
+        "PubChem_CID" = double(),
         "FOUND_BY" = character(),
         "DTXSID_DTX" = character(),
         "PREFERRED_NAME" = character(),
@@ -607,13 +609,12 @@ create_chemical_properties <- function(database_path){
 }
 
 format_chemical_properties <- function(object){
-      suppressWarnings(object$cas_number <- as.integer(object$cas_number))
+      object$cas_number <- as.double(object$cas_number)
       object$cas <- as.character(object$cas)
       object$chemical_name <- as.character(object$chemical_name)
-      object$dtxsid_ecotox <- as.character(object$dtxsid_ecotox)
       object$FOUND_BY <-  as.character(object$FOUND_BY)
       object$DTXSID_DTX <- as.character(object$DTXSID_DTX)
-      object$PubChem_CID <- as.integer(object$PubChem_CID)
+      object$PubChem_CID <- as.double(object$PubChem_CID)
       object$PREFERRED_NAME <- as.character(object$PREFERRED_NAME)
       object$CASRN <- as.character(object$CASRN)
       object$INCHIKEY <- as.character(object$INCHIKEY)
@@ -686,7 +687,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
 
   chemprop <- read_csv(file = file_name, col_names = TRUE, na = c("NA", "", NA, NaN, "N/A", "n/a"), show_col_types = FALSE)
 
-  # chemprop <- format_chemical_properties(chemprop)
+  chemprop <- format_chemical_properties(chemprop)
 
   # subset
 
@@ -707,7 +708,7 @@ update_mol_units <- function(object, database_path = project$database_path, proj
 
   object$chemprop <- tibble(data.table(object$chemprop)[data.table(chemprop), on = c("cas_number"), AVERAGE_MASS := i.AVERAGE_MASS])
 
-  object$chemprop <- object$chemprop %>% mutate_all(na_if, "")
+  #object$chemprop <- object$chemprop %>% mutate_all(na_if, "")
 
   write_csv(x = object$chemprop, file = suppressWarnings(normalizePath(file.path(project_path, "chemical_properties.csv"))), col_names = TRUE)
 
@@ -977,8 +978,8 @@ get_git <- function(){
       # lookup for CID based on CASRN
       casrn <- chemical_list[i, "CASRN"][[1]]
       pccid <- get_cid(casrn)
-      cas_number <- chemical_list[i, "cas_number"][[1]]
-      pccid <- pccid %>% mutate(across(CID, as.integer)) %>% mutate(cas_number = cas_number)
+      cas_number <- chemical_list[i, "cas_number"][[1]] %>% as.double()
+      pccid <- pccid %>% mutate(across(CID, as.double)) %>% mutate(cas_number = cas_number)
 
 
       if (is.na(pccid$CID[[1]])) {
