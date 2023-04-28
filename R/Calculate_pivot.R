@@ -3,6 +3,7 @@
 
 calculate_pivot_table <- function(project,
                                   quantile = NA,
+                                  file_name = NA,
                                   limit_S_AD = NA,
                                   reread = FALSE,
                                   save_project_steps = FALSE){
@@ -133,6 +134,8 @@ message("[EcoToxR]:  Summarizing the data.")
   results_pivot <- results_pivot %>% select("cas_number",
                                    "chemical_name",
                                    "PREFERRED_NAME",
+                                   "DTXSID_DTX",
+                                   "PubChem_CID",
                                    "quantile",
                                    "quantile_value_mg_L",
                                    "min_value_mg_L",
@@ -154,8 +157,6 @@ message("[EcoToxR]:  Summarizing the data.")
                                    "duration_max_h",
                                    "result_count",
                                    "reference_count",
-                                   "DTXSID_DTX",
-                                   "PubChem_CID",
                                    "CASRN",
                                    "SMILES",
                                    "INCHIKEY",
@@ -176,7 +177,18 @@ message("[EcoToxR]:  Summarizing the data.")
 
 
   message("[EcoToxR]:  Saving the pivot table.")
-  write_csv(x = results_pivot, file = file.path(project_path,paste0(tolower(project$object$parameters$ecotoxgroup), "_EcoTox_pivot.csv")), na = "NA", col_names = TRUE)
+
+  if (is.na(file_name)) {
+    file = file.path(project_path,
+                     paste0(tolower(project$object$parameters$ecotoxgroup),
+                            "_EcoTox_pivot.csv"))
+  } else {
+    file = file.path(project_path,
+                     paste0(tolower(filename),
+                            ".csv"))
+  }
+
+  write_csv(x = results_pivot, file = file, na = "NA", col_names = TRUE)
   project$object$results_pivot <- results_pivot
 
   if (isTRUE(save_project_steps)) {
