@@ -1,9 +1,0 @@
-# Changlog
-
-## Changes in version 0.2.0
-- Refactorizing to tidyverse code
-- All filtering steps are maintained in process_data function to consolidate processing
-- Update of the processing script to reflect changes
-- Integration of PubChem CID in chemical data
-- Depracation of non required physchem parameters
-- Depracation of specific listing of QSAR, thus only one log S value is required, including consensus / experimental data
