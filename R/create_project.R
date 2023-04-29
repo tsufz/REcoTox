@@ -22,10 +22,10 @@
 #' \code{REcoTox} project in the \code{database_path}. The default value is
 #' \code{FALSE} (values: \code{c(TRUE, FALSE)}).
 #'
-# @param initialise_project Logical value zu initialize the project folder in
-# the \code{project_path}. The default value is \code{FALSE}
-# (values:\code\{c(TRUE, FALSE)}).
-#
+#' @param initialise_project Logical value zu initialize the project folder in
+#' the \code{project_path}. The default value is \code{FALSE}
+#' (values:\code\{c(TRUE, FALSE)}).
+#'
 #' @param load_default Logical value to load the default project in the
 #' \code{database_path}. The default value is \code{FALSE} (values:
 #' \code{c(TRUE, FALSE)}. The parameter is ignored, if the \code{initialise_
