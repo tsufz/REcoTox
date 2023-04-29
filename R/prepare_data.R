@@ -1,7 +1,5 @@
 #' @export
 #'
-
-
 prepare_data <- function(project,
                          load_initial_project = FALSE,
                          new_project_path = NA,
@@ -20,7 +18,7 @@ prepare_data <- function(project,
       }
 
       if (isTRUE(reread_chemical_list) ) {
-          .tempenv$project <- read_csv(file.path(database_path, "chemical_properties.csv"))
+          .tempenv$project <- readr::read_csv(file.path(database_path, "chemical_properties.csv"))
       }
 
       return(.tempenv$project)
@@ -39,38 +37,50 @@ prepare_data <- function(project,
   message("[EcoToxR]:  Merging tests, results and chemicals.")
 
   # Fix field type issues
-  object$tests <- suppressWarnings(object$tests %>% mutate(cas_number = as.double(cas_number), reference_number = as.double(reference_number), test_id = as.double(test_id)))
-  object$results <- suppressWarnings(object$results %>% mutate(test_id = as.double(test_id), result_id = as.double(result_id)))
-  object$references <- suppressWarnings(object$references %>% mutate(reference_number = as.double(reference_number)))
+  object$tests <- object$tests %>%
+    dplyr::mutate(cas_number = as.double(cas_number),
+                  reference_number = as.double(reference_number),
+                  test_id = as.double(test_id)
+                  )
+
+  object$results <- object$results %>%
+    dplyr::mutate(test_id = as.double(test_id),
+                  result_id = as.double(result_id)
+                  )
+  object$references <- object$references %>%
+    dplyr::mutate(reference_number = as.double(reference_number)
+                  )
 
   # Merge the raw tables
 
-  object$merged_results <- object$tests %>% left_join(object$results, by = "test_id") %>%
-      left_join(object$chemicals, by = "cas_number") %>%
-      left_join(object$species, by = "species_number") %>%
-      left_join(object$references, by = "reference_number")
+  object$merged_results <- object$tests %>%
+    dplyr::left_join(object$results, by = "test_id") %>%
+    dplyr::left_join(object$chemicals, by = "cas_number") %>%
+    dplyr::left_join(object$species, by = "species_number") %>%
+    dplyr::left_join(object$references, by = "reference_number")
 
   # clean up data
   message("[EcoToxR]:  Cleaning up concentration, effects, endpoints, and measurements of asterics, tilde and slash artefacts. Fixing field type issues.")
 
   object$merged_results <- object$merged_results %>%
-      mutate(endpoint = as.character(gsub("\\*", "", endpoint)),
-             endpoint = as.character(gsub("\\/", "", endpoint)),
-             endpoint = as.character(gsub("\\~", "", endpoint)),
+    dplyr::mutate(
+      suppressWarnings(endpoint = as.character(gsub("\\*", "", endpoint))),
+      suppressWarnings(endpoint = as.character(gsub("\\/", "", endpoint))),
+      suppressWarnings(endpoint = as.character(gsub("\\~", "", endpoint))),
 
-             measurement = as.character(gsub("\\*", "", measurement)),
-             measurement = as.character(gsub("\\/", "", measurement)),
-             measurement = as.character(gsub("\\~", "", measurement)),
+      suppressWarnings(measurement = as.character(gsub("\\*", "", measurement))),
+      suppressWarnings(measurement = as.character(gsub("\\/", "", measurement))),
+      suppressWarnings(measurement = as.character(gsub("\\~", "", measurement))),
 
-             effect = as.character(gsub("\\*", "", effect)),
-             effect = as.character(gsub("\\/", "", effect)),
-             effect = as.character(gsub("\\~", "", effect)),
+      suppressWarnings(effect = as.character(gsub("\\*", "", effect))),
+      suppressWarnings(effect = as.character(gsub("\\/", "", effect))),
+      suppressWarnings(effect = as.character(gsub("\\~", "", effect))),
 
-             conc1_mean = suppressWarnings(as.numeric(gsub("\\*", "", conc1_mean))),
-             conc1_min = suppressWarnings(as.numeric(gsub("\\*", "", conc1_min))),
-             conc1_max = suppressWarnings(as.numeric(gsub("\\*", "", conc1_max))),
+      suppressWarnings(conc1_mean = as.numeric(gsub("\\*", "", conc1_mean))),
+      suppressWarnings(conc1_min = as.numeric(gsub("\\*", "", conc1_min))),
+      suppressWarnings(conc1_max = as.numeric(gsub("\\*", "", conc1_max))),
 
-             publication_year = suppressWarnings(as.integer(publication_year))
+      publication_year = as.integer(publication_year)
   )
 
   # Remove unnecessary tables to save space

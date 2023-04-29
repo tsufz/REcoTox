@@ -59,9 +59,12 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
 Collate: 
-    'calculate_pivot.R'
+    'aggregate_results.R'
+    'convert_units.R'
     'create_project.R'
+    'export_functions.R'
     'helperfunctions.R'
+    'pivot_functions.R'
     'prepare_data.R'
     'process_data.R'
     'zzz.R'

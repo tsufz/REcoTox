@@ -55,17 +55,6 @@
 #' @export
 #'
 
-
-source("./R/helperfunctions.R")
-source("./R/Prepare_data.R")
-source("./R/calculate_pivot.R")
-#source("./R/Create_project.R")
-source("./R/process_data.R")
-require(progress)
-require(webchem)
-require(tidyverse)
-require(data.table)
-
 create_project <- function(database_path, project_path, initalise_database_project = FALSE,
                            initalise_project = FALSE, load_default = FALSE) {
 
@@ -122,22 +111,34 @@ create_project <- function(database_path, project_path, initalise_database_proje
 
     #  Trim lists
     object$chemicals <- object$chemicals %>%
-      rename(compound_class = ecotox_group,
+      dplyr::rename(compound_class = ecotox_group,
              dtxsid_ecotox = dtxsid)
 
     # harmonize name for query with chemicals
     #
-    object$tests <- object$tests %>% rename(cas_number = test_cas)
+    object$tests <- object$tests %>% dplyr::rename(cas_number = test_cas)
 
     # Add a column with a CAS in ususal format
-    object$chemicals <- object$chemicals %>% mutate(cas = paste0(substr(as.character(object$chemicals$cas_number), 1, nchar(as.character(object$chemicals$cas_number)) - 3), "-",
-                                                                 substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)) - 2, nchar(as.character(object$chemicals$cas_number)) - 1), "-",
-                                                                 substr(as.character(object$chemicals$cas_number), nchar(as.character(object$chemicals$cas_number)), nchar(as.character(object$chemicals$cas_number)))))
+    object$chemicals <- object$chemicals %>%
+      dplyr::mutate(cas =
+                  paste0(substr(as.character(object$chemicals$cas_number),
+                  1,
+                  nchar(as.character(object$chemicals$cas_number)) - 3),
+                  "-",
+                  substr(as.character(object$chemicals$cas_number),
+                         nchar(as.character(object$chemicals$cas_number)) - 2,
+                         nchar(as.character(object$chemicals$cas_number)) - 1),
+                  "-",
+                  substr(as.character(object$chemicals$cas_number),
+                         nchar(as.character(object$chemicals$cas_number)),
+                         nchar(as.character(object$chemicals$cas_number)))))
 
     message("[EcoToxR]:  Saving the default project in the database folder.")
     project$object <- object
     object <- NULL
-    save(project, file = file.path(database_path,"project.RData"), compress = TRUE)
+    save(project,
+         file = file.path(database_path, "project.RData"),
+         compress = TRUE)
   }
 
 
@@ -146,17 +147,18 @@ create_project <- function(database_path, project_path, initalise_database_proje
     if (!dir.exists(project_path)) {
       message("[EcoToxR]:  Creating the project directory.")
       dir.create(project_path)
-    } else if (!is_empty(project_path)) {
+    } else if (!purrr::is_empty(project_path)) {
       message("[EcoToxR]:  The project directory is not empty. Please checkout content")
       message("[EcoToxR]:  and delete it or use another path before you continue.")
-    } else if (is_empty(project_path)) {
+    } else if (purrr::is_empty(project_path)) {
       message("[EcoToxR]:  The project directory is empty.")
     }
     if (!exists("project") & load_default == FALSE) {
       load_default = TRUE
     }
     if (exists("project") & load_default == FALSE) {
-      project$object$chemprop <- tibble::tibble(create_chemical_properties(project$database_path))
+      project$object$chemprop <-
+        tibble::tibble(create_chemical_properties(project$database_path))
       project$project_path <- suppressWarnings(normalizePath(project_path))
     }
   }
@@ -167,7 +169,11 @@ create_project <- function(database_path, project_path, initalise_database_proje
     project$database_path <- suppressWarnings(normalizePath(database_path))
     project$project_path <- suppressWarnings(normalizePath(project_path))
     project$object$chemprop <- create_chemical_properties(database_path)
-    project$files <- suppressWarnings(normalizePath(list.files(database_path, pattern = "*.txt", full.names = TRUE, recursive = TRUE)))
+    project$files <-
+      suppressWarnings(normalizePath(list.files(database_path,
+                                                pattern = "*.txt",
+                                                full.names = TRUE,
+                                                recursive = TRUE)))
   }
 
   return(project)
