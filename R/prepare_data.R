@@ -64,21 +64,22 @@ prepare_data <- function(project,
 
   object$merged_results <- object$merged_results %>%
     dplyr::mutate(
-      suppressWarnings(endpoint = as.character(gsub("\\*", "", endpoint))),
-      suppressWarnings(endpoint = as.character(gsub("\\/", "", endpoint))),
-      suppressWarnings(endpoint = as.character(gsub("\\~", "", endpoint))),
+      endpoint = as.character(gsub("\\*", "", endpoint)),
+      endpoint = as.character(gsub("\\/", "", endpoint)),
+      endpoint = as.character(gsub("\\~", "", endpoint)),
 
-      suppressWarnings(measurement = as.character(gsub("\\*", "", measurement))),
-      suppressWarnings(measurement = as.character(gsub("\\/", "", measurement))),
-      suppressWarnings(measurement = as.character(gsub("\\~", "", measurement))),
+      measurement = as.character(gsub("\\*", "", measurement)),
+      measurement = as.character(gsub("\\/", "", measurement)),
+      measurement = as.character(gsub("\\~", "", measurement)),
 
-      suppressWarnings(effect = as.character(gsub("\\*", "", effect))),
-      suppressWarnings(effect = as.character(gsub("\\/", "", effect))),
-      suppressWarnings(effect = as.character(gsub("\\~", "", effect))),
+      effect = as.character(gsub("\\*", "", effect)),
+      effect = as.character(gsub("\\/", "", effect)),
+      effect = as.character(gsub("\\~", "", effect)),
 
-      suppressWarnings(conc1_mean = as.numeric(gsub("\\*", "", conc1_mean))),
-      suppressWarnings(conc1_min = as.numeric(gsub("\\*", "", conc1_min))),
-      suppressWarnings(conc1_max = as.numeric(gsub("\\*", "", conc1_max))),
+      # in some cases, the values are NA and thus trigger a warning
+      conc1_mean = suppressWarnings(as.numeric(gsub("\\*", "", conc1_mean))),
+      conc1_min = suppressWarnings(as.numeric(gsub("\\*", "", conc1_min))),
+      conc1_max = suppressWarnings(as.numeric(gsub("\\*", "", conc1_max))),
 
       publication_year = as.integer(publication_year)
   )
