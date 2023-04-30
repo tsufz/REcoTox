@@ -1,23 +1,3 @@
-calculate_hours <- function(object = object) {
-    message("[EcoToxR]:  Recalculating duration data (day to hours).")
-    results <- tibble::tibble(object$results)
-
-    results_h <- results %>% dplyr::filter(obs_duration_unit == "h")
-    results_d <- results %>% dplyr::filter(obs_duration_unit == "d")
-
-    results_d <- results_d %>%
-        dplyr::filter(obs_duration_unit == "d") %>%
-        dplyr::mutate(obs_duration_mean = 24 * obs_duration_mean) %>%
-        dplyr::mutate(obs_duration_unit = "h")
-
-    results <- tibble::tibble(dplyr::bind_rows(results_h, results_d))
-
-    object$results <- results
-
-    return(object)
-
-}
-
 calculate_solubility_domain <-
     function(object = object, input_column_list = c("quantile_value_mg_L",
                                                     "min_value_mg_L",
