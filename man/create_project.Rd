@@ -22,6 +22,10 @@ of the current \code{EcoTox Knowledgebase}.}
 \code{REcoTox} project in the \code{database_path}. The default value is
 \code{FALSE} (values: \code{c(TRUE, FALSE)}).}
 
+\item{initalise_project}{Logical value zu initialize the project folder in
+the \code{project_path}. The default value is \code{FALSE}
+(values:\code{c(TRUE, FALSE)}).}
+
 \item{load_default}{Logical value to load the default project in the
 \code{database_path}. The default value is \code{FALSE} (values:
 \code{c(TRUE, FALSE)}. The parameter is ignored, if the \code{initialise_
@@ -41,18 +45,14 @@ database version.
 \examples{
 # Initialize a new default \code{REcoTox} project in
 # the \code{database_path} by reading the \code{
-# EcoTox Knowledgebase} \emph{asii}-files.
+# EcoTox Knowledgebase} \emph{ascii}-files.
 
-\dontrun{create_project(database_path = database_path,
-project_path = project_path,
-initalise_database_project = TRUE)}
-# Initialize the \code{REcoTox} project folder in
-# the \code{project_path} and read the default
-# database from \code{database_path}.
-\dontrun{create_project(database_path = database_path,
-project_path = project_path,
-initalise_project = TRUE,
-load_default = TRUE)}
+\dontrun{
+project <- create_project(database_path = "/extdata/database_folder",
+project_path = "/extdata/project_folder",
+initalise_database_project = TRUE
+)}
+
 }
 \author{
 Tobias Schulze
