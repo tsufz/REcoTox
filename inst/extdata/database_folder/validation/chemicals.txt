@@ -1,0 +1,2 @@
+cas_number|chemical_name|ecotox_group|dtxsid
+1912249|6-Chloro-N-ethyl-N'-(1-methylethyl)-1,3,5-triazine-2,4-diamine|Endocrine Disrupting Chemicals (EDCs)|DTXSID9020112
