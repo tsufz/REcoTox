@@ -22,9 +22,9 @@
 #' \code{REcoTox} project in the \code{database_path}. The default value is
 #' \code{FALSE} (values: \code{c(TRUE, FALSE)}).
 #'
-#' @param initialise_project Logical value zu initialize the project folder in
+#' @param initalise_project Logical value zu initialize the project folder in
 #' the \code{project_path}. The default value is \code{FALSE}
-#' (values:\code\{c(TRUE, FALSE)}).
+#' (values:\code{c(TRUE, FALSE)}).
 #'
 #' @param load_default Logical value to load the default project in the
 #' \code{database_path}. The default value is \code{FALSE} (values:
@@ -33,25 +33,18 @@
 #'
 #'
 #' @author Tobias Schulze
+#'
 #' @examples
 #' # Initialize a new default \code{REcoTox} project in
 #' # the \code{database_path} by reading the \code{
-#' # EcoTox Knowledgebase} \emph{asii}-files.
+#' # EcoTox Knowledgebase} \emph{ascii}-files.
 #'
-#' \dontrun{create_project(database_path = database_path,
-#' project_path = project_path,
-#' initalise_database_project = TRUE)}
-#
-#' @examples
-#' # Initialize the \code{REcoTox} project folder in
-#' # the \code{project_path} and read the default
-#' # database from \code{database_path}.
-#
-#' \dontrun{create_project(database_path = database_path,
-#' project_path = project_path,
-#' initalise_project = TRUE,
-#' load_default = TRUE)}
-#
+#' \dontrun{
+#' project <- create_project(database_path = "/extdata/database_folder",
+#' project_path = "/extdata/project_folder",
+#' initalise_database_project = TRUE
+#' )}
+#'
 #' @export
 #'
 
@@ -72,47 +65,47 @@ create_project <- function(database_path, project_path, initalise_database_proje
     suppressWarnings({
       message("[EcoToxR]:  Read tests")
       object$tests <- readr::read_delim(file = project$files[grep("tests.txt", project$files)],
-                                 delim = "|",
-                                 na = c("NA","","NR","--","NC","/"),
-                                 quote = "\"",
-                                 show_col_types = FALSE)
+                                        delim = "|",
+                                        na = c("NA","","NR","--","NC","/"),
+                                        quote = "\"",
+                                        show_col_types = FALSE)
 
       message("[EcoToxR]:  Read chemicals.")
       object$chemicals <- readr::read_delim(file = project$files[grep("chemicals.txt", project$files)],
-                                     delim = "|",
-                                     na = c("NA","","NR","--","NC","/"),
-                                     quote = "\"",
-                                     show_col_types = FALSE)
+                                            delim = "|",
+                                            na = c("NA","","NR","--","NC","/"),
+                                            quote = "\"",
+                                            show_col_types = FALSE)
 
       object$chemprop <- tibble::tibble(create_chemical_properties(project$database_path))
 
       message("[EcoToxR]:  Read species.")
       object$species <- readr::read_delim(file = project$files[grep("species.txt", project$files)],
-                                   delim = "|",
-                                   na = c("NA","","NR","--","NC","/"),
-                                   quote = "\"",
-                                   show_col_types = FALSE)
+                                          delim = "|",
+                                          na = c("NA","","NR","--","NC","/"),
+                                          quote = "\"",
+                                          show_col_types = FALSE)
 
       message("[EcoToxR]:  Read results.")
 
       object$results <- readr::read_delim(file = project$files[grep("results.txt", project$files)],
-                                   delim = "|",
-                                   na = c("NA","","NR","--","NC","/"),
-                                   quote = "\"",
-                                   show_col_types = FALSE)
+                                          delim = "|",
+                                          na = c("NA","","NR","--","NC","/"),
+                                          quote = "\"",
+                                          show_col_types = FALSE)
 
       message("[EcoToxR]:  Read references.")
       object$references <- readr::read_delim(file = project$files[grep("references.txt", project$files)],
-                                      delim = "|",
-                                      na = c("NA","","NR","--","NC","/"),
-                                      quote = "\"",
-                                      show_col_types = FALSE)
+                                             delim = "|",
+                                             na = c("NA","","NR","--","NC","/"),
+                                             quote = "\"",
+                                             show_col_types = FALSE)
     })
 
     #  Trim lists
     object$chemicals <- object$chemicals %>%
       dplyr::rename(compound_class = ecotox_group,
-             dtxsid_ecotox = dtxsid)
+                    dtxsid_ecotox = dtxsid)
 
     # harmonize name for query with chemicals
     #
@@ -121,17 +114,17 @@ create_project <- function(database_path, project_path, initalise_database_proje
     # Add a column with a CAS in ususal format
     object$chemicals <- object$chemicals %>%
       dplyr::mutate(cas =
-                  paste0(substr(as.character(object$chemicals$cas_number),
-                  1,
-                  nchar(as.character(object$chemicals$cas_number)) - 3),
-                  "-",
-                  substr(as.character(object$chemicals$cas_number),
-                         nchar(as.character(object$chemicals$cas_number)) - 2,
-                         nchar(as.character(object$chemicals$cas_number)) - 1),
-                  "-",
-                  substr(as.character(object$chemicals$cas_number),
-                         nchar(as.character(object$chemicals$cas_number)),
-                         nchar(as.character(object$chemicals$cas_number)))))
+                      paste0(substr(as.character(object$chemicals$cas_number),
+                                    1,
+                                    nchar(as.character(object$chemicals$cas_number)) - 3),
+                             "-",
+                             substr(as.character(object$chemicals$cas_number),
+                                    nchar(as.character(object$chemicals$cas_number)) - 2,
+                                    nchar(as.character(object$chemicals$cas_number)) - 1),
+                             "-",
+                             substr(as.character(object$chemicals$cas_number),
+                                    nchar(as.character(object$chemicals$cas_number)),
+                                    nchar(as.character(object$chemicals$cas_number)))))
 
     message("[EcoToxR]:  Saving the default project in the database folder.")
     project$object <- object
