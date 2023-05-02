@@ -1,7 +1,7 @@
 <!-----
 title: "REcoTox - A  workflow to process US EPA ECOTOX Knowledgebase ASCII files"
 author: "Tobias Schulze"
-date: '2022-04-07'
+date: '2023-05-0'
 output: pdf_document -->
 ---
 
@@ -11,13 +11,13 @@ The search and extraction of experimental ecotoxicological information is often 
 
 # Introduction
 
-[REcoTox](https://github.com/tsufz/REcoTox) is a semi-automated, interactive workflow to process [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase") entire database [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files") to extract and process ecotoxicological data relevant (but not restricted) to the ecotoxicity groups algae, crustaceans, and fish in the aquatic domain. The latest version of the [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files") is available on [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase"). The focus is aquatic ecotoxicity and the unit of the retrieved data is `mg/L`.
+[REcoTox](https://github.com/tsufz/REcoTox) is a semi-automated, interactive workflow to process [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase") entire database [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files") to extract and process ecotoxicological data relevant (but not restricted) to the ecotoxicity groups algae, crustaceans, and fish in the aquatic domain. The latest version of the [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_15_2023.zip) is available on [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase"). The focus is aquatic ecotoxicity and the unit of the retrieved data is `mg/L`.
 
 For use of [REcoTox](https://github.com/tsufz/REcoTox), clone the repository to your computer:
 
 `git clone https://github.com/tsufz/REcoTox.git`
 
-The workflow expects an `R version >4.0.0`. Please install additionally the `R packages` `Tidyverse`, `data_table` and `sqldf`.
+The workflow expects an `R version >4.3.0`. Please install additionally the `R packages` `Tidyverse`, `data_table`, `EnvStats`, and `webchem`.
 
 # Workflow
 
