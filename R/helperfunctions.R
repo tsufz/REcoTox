@@ -361,7 +361,7 @@ return(object)
 create_chemical_properties <- function(database_path){
   if (file.exists(file.path(database_path, "chemical_properties.csv"))){
     message("[EcoToxR]:  Reading chemical properties (this is a custom file).")
-    object <- read_csv(file = file.path(database_path, "chemical_properties.csv"), na = c("NA", "", NA, NaN), show_col_types = FALSE)
+    object <- readr::read_csv(file = file.path(database_path, "chemical_properties.csv"), na = c("NA", "", NA, NaN), show_col_types = FALSE)
     object <- format_chemical_properties(object)
 
   } else {
