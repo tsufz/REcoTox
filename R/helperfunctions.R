@@ -174,7 +174,7 @@ query_pubchem <- function(object = object) {
             pc_props <-
               pccid %>% dplyr::left_join(pc_props, by = c("cid" = "CID"))
 
-            if (!dplyr::is_empty(which(names(pc_props) %like% "IUPACName"))) {
+            if (!purrr::is_empty(which(names(pc_props) %like% "IUPACName"))) {
 
                 pc_props <-
                   pc_props %>%
