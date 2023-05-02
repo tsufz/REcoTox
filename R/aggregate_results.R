@@ -1,10 +1,44 @@
+# Workflow to aggregate the longer tabulated results of the
+# EcoTox Knowledgebase query to wider format. The table is exported
+# in \code{csv} format to the \code{project_folder}.
+#
+#' @title Aggregate data
+#'
+#' @description
+#' This function aggregates the longer formmat results of the EcoTox
+#' Knowledgebase query stored in the \code{REcoTox} project to the
+#' final longer results data table.
+#'
+#' @param project Name of the initial project in the \code{environment}.
+#' The default value is \code{project}.
+#'
+#' @param quantile Value of the lowest quantile to aggregate the data.
+#' Default value: \code{NA}. For example: \code{0.05}
+#'
+#' @param file_name Custom file name (without extension) for the exported
+#' results. Default value: \code{NA}.
+#'
+#' @param reread Read the longer \code{csv} table from \code{project_folder}
+#' and process it. For example to exclude compounds or single results.
+#' Default value: \code{FALSE} (values: \code{c(FALSE, TRUE)}).
+#'
+#' @param save_project_steps Stores the current project state in the \code{project_folder}.
+#' The default value is \code{FALSE} (values: \code{c(FALSE, TRUE)}).
+#'
+#' @author Tobias Schulze
+#'
+#' @examples
+#' # Run the current project with a quantile of {0.05} with a custom name.
+#'
+#' \dontrun{aggregate_results(project = project, quantile = 0.05,
+#' file_name = "algae_aggregated_results")}
+#'
 #' @export
 #'
 
-aggregate_results <- function(project,
+aggregate_results <- function(project = project,
                                   quantile = NA,
                                   file_name = NA,
-                                  limit_S_AD = NA,
                                   reread = FALSE,
                                   save_project_steps = FALSE) {
 
@@ -44,10 +78,6 @@ message("[EcoToxR]:  Summarizing the data.")
               .groups = "keep"
     ) %>%
     dplyr::ungroup()
-
-  #%>%  # unique() is needed
-  #   dplyr::mutate(quantile = sprintf("%1.0f%%", quantile * 100)) #%>% Optional prettification
-
 
   # Add more tricky aggregated columns
 
