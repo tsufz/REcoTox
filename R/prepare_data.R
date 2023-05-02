@@ -1,9 +1,82 @@
+# Prepares the data after import for downstream processing
+
+#' @title Prepare data
+#'
+#' @description
+#' This function prepares the data \code{REcoTox}. It can also handle
+#' a previous created initial project, which can be stored in the end
+#' of the preparation process to avoid re-processing data.
+#'
+#' If a project from a different folder is used, the current project folder
+#' can be assigned.
+#'
+#' The \code{tests}, \code{chemicals}, \code{results}, \code{species}
+#' and \code{references} imported from \code{ascii} files is merged.
+#'
+#' The function cleans the values from tilde, slash and asterics artefacts
+#' and assign appropriate field types.
+#'
+#' The prepared project can be stored as initial project.
+#'
+#' @param project Name of the initial project in the \code{environment}.
+#' The default value is \code{project}.
+#'
+#' @param load_initial_project Logical value to load an existing initial
+#' project from the \code{project_folder} containing the pre-processed project.
+#' The default value is \code{FALSE} (values: \code{c(TRUE, FALSE)}).
+#'
+#' @param new_project_path Path of the \code{project_folder}.
+#' The default value is \code{NA}.
+#'
+#' @param reread_chemical_list Logical value if the chemical list (which
+#' may be updated) is loaded in the re-loaded initial project.
+#' The default value is \code{FALSE} (values:\code{c(TRUE, FALSE)}).
+#
+#' @param save_project Stores the initial project in the \code{project_folder}.
+#' The default value is \code{TRUE} (values:\code{c(TRUE, FALSE)}).
+#'
+#' @author Tobias Schulze
+#'
+#' @examples
+#' # Load the default \code{REcoTox} project in the \code{environment}
+#' # and prepare the data for downstream processing.
+#'
+#' \dontrun{prepare_data(project = project,
+#' load_initial_project = FALSE,
+#' new_project_path = NA,
+#' reread_chemical_list = FALSE,
+#' save_project = FALSE)}
+#
+#' @examples
+#'
+#' # Load the default \code{REcoTox} project in the \code{environment}
+#' # and prepare the data for downstream processing. Store the initial
+#' # project in the \code{project_folder}.
+#'
+#' \dontrun{prepare_data(project = project,
+#' load_initial_project = FALSE,
+#' new_project_path = NA,
+#' reread_chemical_list = FALSE,
+#' save_project = TRUE)}
+#'
+#' @examples
+#'
+#' # Load the initial \code{REcoTox} project stored in the \code{project_folder}
+#' # the \code{environment}, replace the \code{project_path}, add an updated
+#' # \code{chemcial list} and the updated project in the \code{project_folder}.
+#'
+#' \dontrun{prepare_data(project = project,
+#' load_initial_project = TRUE,
+#' new_project_path = project_path,
+#' reread_chemical_list = TRUE,
+#' save_project = TRUE)}
+#'
 #' @export
 #'
-prepare_data <- function(project,
+prepare_data <- function(project = project,
                          load_initial_project = FALSE,
                          new_project_path = NA,
-                         reread_chemical_list = NA,
+                         reread_chemical_list = FALSE,
                          save_project = TRUE
                          ) {
 
