@@ -210,7 +210,7 @@ message("[EcoToxR]:  Summarizing the data.")
     dplyr::ungroup()
 
 
-  message("[EcoToxR]:  Saving the pivot table.")
+  message("[EcoToxR]:  Saving the aggregated table.")
 
   if (is.na(file_name)) {
     file = file.path(project_path,

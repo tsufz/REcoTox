@@ -584,7 +584,7 @@
       project$object <- object
       save_project(project, save_project_steps)
       message("[EcoToxR]:  The data pre-processing is finalised.")
-      message("[EcoToxR]:  Please run the pivot export workflow.")
+      message("[EcoToxR]:  Please run the aggregation workflow.")
       return(project)
     }
   }
