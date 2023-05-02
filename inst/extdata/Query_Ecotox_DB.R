@@ -1,25 +1,17 @@
 {rm(list = ls())
-#require(data.table)
-#    require(sqldf)
-#require(tidyverse)
-
+    library(REcoTox)
 }
+
 # For documentation
-# REcoTox 0.3.5
-
-# Use only for development purposes
-# source("./R/Create_project.R")
-
-library(REcoTox)
+# REcoTox 0.4.0
 
 # Declare the database folder including the current version of EcoToX Knowledgebase
 # A comprehensive name is for example "EcoTox_Fish_EC50"
 
-
-database_path <- "path_to_ecotox_unzipped_ascii_files"
+database_path <- "path_to_database_file"
 
 # Declare the project folder to store the files of your query
-project_path <- "path_to_project_folder"
+project_path <- dirname(rstudioapi::documentPath())
 
 # Declare the ecotox group ("Species Group")
 
@@ -27,10 +19,11 @@ project_path <- "path_to_project_folder"
 
 # create the project
 #
-project <- create_project(database_path, project_path,
-                          initalise_database_project = FALSE, # create the basic project from current ASCII files in DB folder
+project <- create_project(database_path,
+                          project_path,
+                          initalise_database_project = TRUE, # create the basic project from current ASCII files in DB folder
                           initalise_project = TRUE, # initializes the project folder
-                          load_default = TRUE) # loads the default project in the project folder in the memory
+                          load_default = FALSE) # loads the default project in the project folder in the memory
 
 
 # initialise_database_project (TRUE/FALSE) - create a new basic database out of the EcoTox ASCII files
@@ -43,43 +36,34 @@ project <- create_project(database_path, project_path,
 # Step 1: Run the first data preparation step to create the initial project
 
 project <- prepare_data(project = project,
-                        load_initial_project = TRUE,
+                        load_initial_project = FALSE,
                         new_project_path = NA,
-                        save_project = FALSE
-                        )
+                        save_project = TRUE
+)
 
 # Reload the results of the first step
 # load(file.path(project_path, "initial_project.RData"))
 
 # Step 2: Filter the data on the specified criteria
 # Declare the settings for dataset filerting
-# The filtering needs some knowledge on the internal structures of the database
-# For reference see https://cfpub.epa.gov/ecotox/help.cfm?sub=term-appendix
 dosing_group = "water_concentration" # i.e. mg/L (only available group in this version)
-
-# time based settings
-duration_d = c("d", "dph", "dpf") # day based units
-duration_h = c("h", "ht", "hph", "hpf", "hbf", "hv") # hour based units
-duration_m = "mi" # minute based units
-min_h = 0 # minimum hours
-min_d = 0 # minimum days
-min_m = 0 # minimum minutes
-
-max_h = 120 # maximum hours
-max_d = 5 # maximum days
-max_m = 7200 # maximum minutes
-
-# species base settings
+duration_d = c("d", "dph", "dpf")
+duration_h = c("h", "ht", "hph", "hpf", "hbf", "hv")
+duration_m = "mi"
 ecotoxgroup = "Algae" # c("Algae", "Crustacean", "Fish")
-species_selection = "all" # c("all", "manual", "standard_test_species")
-habitat = "Water" #c("Non-Soil","Water","Soil")
-kingdoms = NA # vector of specific algae kingdoms: c("Chromista","Plantae","Monera")
-
-# effects and measurements
 effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV") # Algae/Fish
 #effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV", "ITX") # Crustacean
+habitat = "Water" #c("Non-Soil","Water","Soil")
+kingdoms = NA # vector of specific algae kingdoms: c("Chromista","Plantae","Monera")
+measurements = NA # vector of specific measurements
+min_h = 0
+min_d = 0
+max_h = 120
+max_d = 5
+min_m = 0
+max_m = 7200
+species_selection = "all" # c("all", "manual", "standard_test_species")
 
-measurements = NA # vector of specific measurements for refined selection
 
 # Run the workflow
 project <- process_data(project,
@@ -102,6 +86,7 @@ project <- process_data(project,
                         save_project_steps = FALSE,
                         species_selection = species_selection
 )
+
 # A list of endpoints and species lists are stored in the project folder for selection
 
 #load(file = file.path(project_path, paste0(ecotoxgroup,"_state1.RData")))
@@ -109,8 +94,7 @@ project <- process_data(project,
 # Step 3: Read the modified lists in and process the data including unit conversion
 # A list of chemicals is stored to update missing information on mol weights for data conversion
 
-project <- process_data(project, save_project_steps = FALSE
-)
+project <- process_data(project, save_project_steps = FALSE)
 
 #load(file = file.path(project_path, paste0(ecotoxgroup,"_state2.RData")))
 
@@ -120,33 +104,27 @@ project <- process_data(project, save_project_steps = FALSE
 # This step creates a file named for example "fish_chemical_list.csv"
 # Edit this list to include newly added compounds (imputation of phys.-
 # chem. propertis and metadata)
-# Optional: Save the project file to the project folder.
 
-project <- process_data(project, save_project_steps = FALSE
-)
+project <- process_data(project, save_project_steps = FALSE)
 
 #load(file = file.path(project_path,paste0(ecotoxgroup,"_state3.RData")))
 
 # Step 5:Process the final results and estimate the solubility domain
 # Optional: Update the basic chemical list in the database folder
-# The update is recommended, if the chemical list was edited / updated
-# Optional: Save the project to the project_folder
 
 project <- process_data(project, save_project_steps = FALSE, update_chemicals = FALSE)
 
 
-#load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
+# load(file = file.path(project_path,paste0(ecotoxgroup,"_state4.RData")))
 # save(project,file = file.path(project_path,paste0(prefix,"_pre_exclusion_project.RData")), compress = TRUE)
 
 
 # Step 6: calculate and export the pivot table aggregating the results
-# Select the value for the percentile cut-off of the ECx values
-project <- calculate_pivot_table(project = project, quantile = 0.05)
-
+project <- aggregate_results(project = project, quantile = 0.05)
 
 
 # do some final stuff
 save(project, file = file.path(project_path,paste0(ecotoxgroup, "_processed_project.RData")), compress = TRUE)
-rstudioapi::documentSave() # save current R script
-r_file <- rstudioapi::getSourceEditorContext()$path
-file.copy(r_file,file.path(project_path), overwrite = FALSE) # copy the script to the project_folder
+rstudioapi::documentSave()
+#r_file <- rstudioapi::getSourceEditorContext()$path
+#file.copy(r_file,file.path(project_path), overwrite = TRUE)
