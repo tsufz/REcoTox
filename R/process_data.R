@@ -226,10 +226,11 @@
         object$parameters$sample_size <- sample_size
         object$parameters$species_selection <- species_selection
         object$parameters$update_chemicals <- update_chemicals
+        object$state = 1
     }
 
     # Workflow step 1
-    if (is.null(object$state) == TRUE) {
+    if (object$state == 1) {
 
       # select only water organisms and merge tables
       message("[EcoToxR]:  Subsetting to habitat.")
@@ -487,7 +488,7 @@
 
       write_csv(endpoints, suppressWarnings(normalizePath(file.path(project_path,paste0(tolower(ecotoxgroup), "_endpoint_selection.csv")))))
 
-      object$state <- 1
+      object$state <- 2
 
       project$object <- object
       save_project(project, save_project_steps)
@@ -498,7 +499,7 @@
 
     # Workflow step 2
 
-    if(object$state == 1){
+    if(object$state == 2){
     ecotoxgroup <- object$parameters$ecotoxgroup
     # Filter the selected endpoints
     endpoints <- readr::read_csv(file.path(project_path, paste0(tolower(ecotoxgroup), "_endpoint_selection.csv")), show_col_types = FALSE)
@@ -528,7 +529,7 @@
     # extract mol related records and export for review, alternatively export the file for exclusion review
     if (nrow(object$results_filtered %>% select(conc1_unit) %>% filter(conc1_unit %like% "mol/L")) > 0){
         object <- export_mol_units(object = object)
-        object$state <- 2
+        object$state <- 3
         project$object <- object
         save_project(project, save_project_steps)
     return(project)
@@ -536,7 +537,7 @@
 
     #object <- export_exclude_list(object,project$project_path)
     export_chemical_list(object, project$project_path)
-    object$state <- 3
+    object$state <- 4
     project$object <- object
     save_project(project, save_project_steps)
     return(project)
@@ -546,7 +547,7 @@
 
     # workflow step 3
 
-    if(object$state == 2){
+    if(object$state == 3){
       ecotoxgroup <- object$parameters$ecotoxgroup
       # update records with mol related concentrations
       if (file.exists(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_mol_weight.csv")))){
@@ -555,7 +556,7 @@
                            database_path = project$database_path,
                            project_path = project$project_path)
         export_chemical_list(object, project$project_path)
-        object$state <- 3
+        object$state <- 4
         project$object <- object
         save_project(project, save_project_steps)
         return(project)
@@ -564,7 +565,7 @@
 
     # Workflow step 4
 
-    if(object$state == 3){
+    if(object$state == 4){
 
       # This routine just exports an exclusion and inclusion list, but does not remove chemicals from chemical list
       object <- remove_excluded_chemicals(object, project$project_path)
