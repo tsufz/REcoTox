@@ -1,15 +1,190 @@
+# Processing workflow to filter, amend and creation of the final longer
+# data table.
+#
+#' @title Process data
+#'
+#' @description
+#' This function processes the data in the \code{REcoTox} project according
+#' to the filtering settings and creates a final longer data table.
+#'
+#' In brief, the \code{process_data} workflwo has four steps.
+#'
+#' Step 1: Read the filtering parameters, filters the data and exports
+#' files for customized selection of endpoints and species.
+#'
+#' \itemize{
+#' \item Read the parameters and store it in the project.
+#' \item Filter the data according to given parameters.
+#' \item Filter the data to volume related dosings.
+#' \item Prepare and export the endpoint list for review.
+#' \item Prepare and export the species list for review.
+#' }
+#'
+#' Step 2: Read the reviewed endpoint and species tables, filter the data,
+#' convert units to \code{mg/L} and prepare and export a list of compounds
+#' with \code{mol/L} units for review and update of the \code{average_mass}
+#' for unit transformation.
+#'
+#' \itemize{
+#' \item Read the endpoint and species tables.
+#' \item Filter the data according to selected endpoints and species.
+#' \item Convert units to \code{mg/L}.
+#' \item Prepare and export of \code{mol/L} units for review and amendment
+#' of missing \code{average_mass} values.
+#' }
+#'
+#' Step 3: Read the reviewed mol table and convert remaining \code{mol/L} units
+#' to \code{mg/L}.
+#' Prepare and export a list of compounds for review and amendment of
+#' missing data.
+#'
+#' \itemize{
+#' \item Read the revised mol table.
+#' \item Convert remaining \code{mol/L} units to \code{mg/L}.
+#' \item Prepare and export of the chemicals table for review.
+#' }
+#'
+#' Step 4: Read the reviewed chemical table, filter excluded compounds,
+#' update the basic chemical list in \code{database_folder}, build the final
+#' longer list, convert \code{time} units to \code{h}, and export the list to the
+#' \code{project_folder}.
+#'
+#' \itemize{
+#' \item Read the revised chemical table.
+#' \item Apply changes in the table.
+#' \item Update the basic chemical list in the \code{database_folder} (optional).
+#' \item Build the final results list in \code{longer} format.
+#' \item Convert \code{day} units to \code{h}.
+#' }
+#'
+#' @param project Name of the initial project in the \code{environment}.
+#' The default value is \code{project}.
+#'
+#' @param dosing_group Dosings to be included in the analysis
+#' Only the \code{water concentration} group is implemented.
+#' The default value is \code{water_concentration}.
+#'
+#' @param duration_d Duration of the test in \code{days}.
+#' The default value is \code{NA}. Typical values: \code{c("d", "dph", "dpf")}.
+#'
+#' @param duration_h Duration of the test in \code{hours}.
+#' The default value is \code{NA}. Typical values: \code{c("h", "ht", "hph",
+#' "hpf", "hbf", "hv")}.
+#'
+#' @param duration_m Duration of the test in \code{minutes}.
+#' The default value is \code{NA}. Typical value: \code{mi}.
+#'
+#' @param ecotoxgroup Ecotoxgroup (species_group) to be selected for the
+#' analysis.
+#' The default value is \code{NA}. Typical values: \code{c(algae, crustaceans,
+#' fish)}.
+#'
+#' @param effects Effects to included in the analysis.
+#' For details, review the [US EPA Knowledgebase Code Appendix](https://cfpub.epa.gov/ecotox/help.cfm?sub=term-appendix).
+#' The default value is \code{NA}. Typical values: \code{c(algae, crustaceans,
+#' fish)}.
+#'
+#' @param habitat Habitat to included in the analysis.
+#' For details, review the [US EPA Knowledgebase Code Appendix](https://cfpub.epa.gov/ecotox/help.cfm?sub=term-appendix).
+#' The default value is \code{NA}. Allowed values: \code{c("Non-Soil","Water","Soil")}.
+#'
+##' @param kingdoms Kingdoms of algae to included in the analysis.
+#' For details, review the [US EPA Knowledgebase Code Appendix](https://cfpub.epa.gov/ecotox/help.cfm?sub=term-appendix).
+#' The default value is \code{NA}.
+#'
+#' @param measurements Measurements to included in the analysis.
+#' For details, review the [US EPA Knowledgebase Code Appendix](https://cfpub.epa.gov/ecotox/help.cfm?sub=term-appendix).
+#' The default value is \code{NA}.
+#'
+#' @param max_d Maximal duration of the test in \code{days}.
+#' The default value is \code{NA}, otherwise the expected value is \code{d}.
+#'
+#' @param min_d Minimal duration of the test in \code{days}.
+#' The default value is \code{NA} otherwise the expected value is \code{d}.
+#'
+#' @param max_h Maximal duration of the test in \code{hours}.
+#' The default value is \code{NA} otherwise the expected value is \code{h}.
+#'
+#' @param min_h Minimal duration of the test in \code{hours}.
+#' The default value is \code{NA}otherwise the expected value is \code{h}.
+#'
+#' @param max_m Maximal duration of the test in \code{minutes}.
+#' The default value is \code{NA} otherwise the expected value is \code{m}.
+#'
+#' @param min_m Minimal duration of the test in \code{minutes}.
+#' The default value is \code{NA} otherwise the expected value is \code{m}.
+#'
+#' @param remove_formulation Removes records related to formulations.
+#' The default value is \code{NA}.
+#'
+#' @param sample_size Size of a sub-sample of records (for testing only).
+#'
+#' @param save_project_steps Stores the current project state in the \code{project_folder}.
+#' The default value is \code{FALSE} (values: \code{c(FALSE, TRUE)}).
+#'
+#' @param species_selection Species to be selected for the analysis.
+#' The default values is \code{NA}. Fore example: \code{c("all", "manual", "standard_test_species")}.
+#'
+#' @param state Set the processing state (for testing or re-run only).
+#' The default value is \code{NA}.
+#'
+#' @param update_chemicals Update the basic chemical list in the
+#' \code{database_folder}.
+#' The default value is \code{TRUE} (values: \code{c(FALSE, TRUE)}).
+#'
+#' @author Tobias Schulze
+#' @examples
+#' # Run the workflow for processing step 1.
+#'
+#' \dontrun{project <- process_data(project = project,
+#' duration_d = c("d", "dph", "dpf"),
+#' duration_h = c("h", "ht", "hph", "hpf", "hbf", "hv"),
+#' duration_m = mi,
+#' ecotoxgroup = ecotoxgroup,
+#' effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV"),
+#' habitat = "Water",
+#' max_d = 5,
+#' min_d = 0,
+#' max_h = 120,
+#' min_h = 0,
+#' max_m = 7200,
+#' min_m = 0,
+#' remove_formulation = FALSE,
+#' save_project_steps = FALSE,
+#' species_selection = "all")}
+#
+#' @examples
+#' # Run the workflow for processing step 2.
+#'
+#' \dontrun{project <- process_data(project, save_project_steps = FALSE)}
+#'
+#' @examples
+#' # Run the workflow for processing step 3.
+#'
+#' \dontrun{project <- process_data(project, save_project_steps = FALSE)}
+#'
+#' @examples
+#' # Run the workflow for procssing step 4.
+#'
+#' \dontrun{project <- process_data(project, save_project_steps = FALSE, update_chemicals = FALSE)}
+#'
+#' @examples
+#' # Run the workflow for procssing step 5.
+#'
+#' \dontrun{project <- aggregate_results(project = project, quantile = 0.05)}
+#'
 #' @export
+#'
 # functions
 
-  process_data <- function(project,
-                           all_species = FALSE,
+  process_data <- function(project = project,
                            dosing_group = "water_concentration",
                            duration_d = NA,
                            duration_h = NA,
                            duration_m = NA,
                            ecotoxgroup = NA,
-                           effects = NA, #
-                           habitat = NA, #
+                           effects = NA,
+                           habitat = NA,
                            kingdoms = NA,
                            measurements = NA,
                            max_d = NA,
@@ -18,15 +193,12 @@
                            min_h = NA,
                            min_m = NA,
                            max_m = NA,
-                           remove_operator_records = FALSE,
                            remove_formulation = FALSE,
                            sample_size = NA, # required for testing only
-                           save_project_steps = TRUE,
+                           save_project_steps = FALSE,
                            species_selection = NA,
                            state = NA,
-                           update_chemicals = FALSE,
-                           water_solubility_cut_off = FALSE,
-                           water_solubility_threshold = NA
+                           update_chemicals = FALSE
                            ){
 
     # Load data
@@ -51,12 +223,9 @@
         object$parameters$max_m <- max_m
         object$parameters$min_m <- min_m
         object$parameters$remove_formulation <- remove_formulation
-        object$parameters$remove_operator_records <- remove_operator_records
         object$parameters$sample_size <- sample_size
         object$parameters$species_selection <- species_selection
         object$parameters$update_chemicals <- update_chemicals
-        object$parameters$water_solubility_cut_off <- water_solubility_cut_off
-        object$parameters$water_solubility_threshold <- water_solubility_threshold
     }
 
     # Workflow step 1
@@ -393,6 +562,8 @@
       }
     }
 
+    # Workflow step 4
+
     if(object$state == 3){
 
       # This routine just exports an exclusion and inclusion list, but does not remove chemicals from chemical list
@@ -407,7 +578,6 @@
       object <- build_final_list(object)
       object <- calculate_hours(object)
 
-      #object <- calculate_water_solubility(object)
       object$state <- 4
       readr::write_csv(x = object$results,file = suppressWarnings(normalizePath(file.path(project_path, paste0(tolower(object$parameters$ecotoxgroup), "_final_results.csv")))))
       project$object <- object
