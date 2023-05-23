@@ -5,6 +5,11 @@ date: '2023-05-0'
 output: pdf_document -->
 ---
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7957956.svg)](https://doi.org/10.5281/zenodo.7957956)
+
+
+
 # Background
 
 The search and extraction of experimental ecotoxicological information is often a tedious work. A good and comprehensive data source is the [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase"). It contains about 1 million data points for more than 12,000 chemicals and 13,000 single species. However, for a high-throughput hazard assessment, it is not possible to extract all relevant data of the online database The purpose of REcoTox is to extract the relevant information and to aggregate the data based on the user criteria out of the entire database [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files").
