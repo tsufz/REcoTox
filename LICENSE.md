@@ -1,8 +1,14 @@
----
-editor_options: 
-  markdown: 
-    wrap: sentence
----
+# Copyright Notice
+© 2020-2023, Helmholtz-Zentrum für Umweltforschung GmbH – UFZ. All rights reserved.
+
+The code is a property of:
+Helmholtz-Zentrum für Umweltforschung GmbH – UFZ
+Registered Office: Leipzig
+Registration Office: Amtsgericht Leipzig
+Trade Register Nr. B 4703
+Chairman of the Supervisory Board: MinDirig'in Oda Keppler
+Scientific Director: Prof. Dr. Rolf Altenburger
+Administrative Director: Dr. Sabine König
 
 # GNU AFFERO GENERAL PUBLIC LICENSE
 
