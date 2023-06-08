@@ -9,11 +9,25 @@ The search and extraction of experimental ecotoxicological information is often 
 
 [REcoTox](https://github.com/tsufz/REcoTox) is a semi-automated, interactive workflow to process [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase") entire database [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files") to extract and process ecotoxicological data relevant (but not restricted) to the ecotoxicity groups algae, crustaceans, and fish in the aquatic domain. The latest version of the [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_15_2023.zip) is available on [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase"). The focus is aquatic ecotoxicity and the unit of the retrieved data is `mg/L`.
 
-For use of [REcoTox](https://github.com/tsufz/REcoTox), install it from GitHub, please:
+## Requirements
+
+`REcoTox` expects an `R version >4.3.0`. Please install additionally the `R packages` `Tidyverse`, `data_table`, `EnvStats`, and `webchem`.
+
+## Installation
+
+For use of [REcoTox](https://github.com/tsufz/REcoTox), install it from GitHub, please.
+
+### To install the latest stable version (0.4.0):
 
 `remotes::install_github("tsufz/recotox@0.4.0", build = TRUE, build_manual = TRUE)`
 
-The workflow expects an `R version >4.3.0`. Please install additionally the `R packages` `Tidyverse`, `data_table`, `EnvStats`, and `webchem`.
+### To install the latest beta version (main):
+
+`remotes::install_github("tsufz/recotox@main", build = TRUE, build_manual = TRUE)`
+
+### To install the latest development version (dev):
+
+`remotes::install_github("tsufz/recotox@dev", build = TRUE, build_manual = TRUE)`
 
 # Workflow
 
