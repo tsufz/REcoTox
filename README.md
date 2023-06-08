@@ -1,14 +1,5 @@
-<!-----
-title: "REcoTox - A  workflow to process US EPA ECOTOX Knowledgebase ASCII files"
-author: "Tobias Schulze"
-date: '2023-05-0'
-output: pdf_document -->
----
-
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7957956.svg)](https://doi.org/10.5281/zenodo.7957956)
-
-
 
 # Background
 
@@ -18,9 +9,9 @@ The search and extraction of experimental ecotoxicological information is often 
 
 [REcoTox](https://github.com/tsufz/REcoTox) is a semi-automated, interactive workflow to process [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase") entire database [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files") to extract and process ecotoxicological data relevant (but not restricted) to the ecotoxicity groups algae, crustaceans, and fish in the aquatic domain. The latest version of the [ASCII files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_15_2023.zip) is available on [US EPA ECOTOX Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase"). The focus is aquatic ecotoxicity and the unit of the retrieved data is `mg/L`.
 
-For use of [REcoTox](https://github.com/tsufz/REcoTox), clone the repository to your computer:
+For use of [REcoTox](https://github.com/tsufz/REcoTox), install it from GitHub, please:
 
-`git clone https://github.com/tsufz/REcoTox.git`
+`remotes::install_github("tsufz/recotox@0.4.0", build = TRUE, build_manual = TRUE)`
 
 The workflow expects an `R version >4.3.0`. Please install additionally the `R packages` `Tidyverse`, `data_table`, `EnvStats`, and `webchem`.
 
