@@ -1,0 +1,640 @@
+---
+title: "REcoTox - a workflow to process US EPA ECOTOX Knowledgebase ASCII files"
+shorttitle: "REcoTox (version `r desc::desc_get_version()`)"
+author: Tobias Schulze
+        | Helmholtz Centre for Environmental Research - UFZ, Leipzig, Germany
+        | tsufz1@gmail.com
+date: 2023-11-04
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_float: TRUE
+vignette: >
+  %\VignetteIndexEntry{REcoTox - a workflow to process US EPA ECOTOX Knowledgebase ASCII files}
+  %\VignetteKeywords{E}
+  %\VignettePackage{REcoTox}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteDepends{BiocStyle, desc}
+bibliography: references.bib
+csl: biomed-central.csl
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r biocstyle, echo = FALSE, messages = FALSE, results = "hide"}
+BiocStyle::markdown()
+```
+
+```{r init, message = FALSE, echo = FALSE, results = "hide" }
+## Silently loading all packages
+library(BiocStyle)
+library(desc)
+library(kableExtra)
+library(tidyverse)
+```
+
+\newpage
+
+# Background
+
+The search and extraction of experimental ecotoxicological information
+is often a tedious work. A good and comprehensive data source is the [US
+EPA ECOTOX
+Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase").
+It contains more than 1 million data points for almost 13,000 chemicals
+and 14,000 single species. However, for a high-throughput hazard
+assessment, it is not possible to extract all relevant data of the
+online database. The purpose of REcoTox is to extract the relevant
+information and to aggregate the data based on the user criteria out of
+the entire database [ASCII
+files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files").
+
+# Introduction
+
+[REcoTox](https://github.com/tsufz/REcoTox) is a semi-automated,
+interactive workflow to process [US EPA ECOTOX
+Knowledgebase](https://cfpub.epa.gov/ecotox/ "US EPA ECOTOX Knowledgebase")
+entire database [ASCII
+files](https://gaftp.epa.gov/ecotox/ecotox_ascii_03_10_2022.zip "ECOTOX Knowledgebase ASCII files")
+to extract and process ecotoxicological data relevant (but not
+restricted) to the ecotoxicity groups algae, crustaceans, and fish in
+the aquatic domain. The focus is aquatic ecotoxicity and the unit of the
+retrieved data is `mg/L`.
+
+# Input files and folders
+
+`REcoTox` requires an unzipped `US EPA Knowlegdebase` database in
+`ASCII` format (Zitat). The database is preferable expanded in an own
+database folder to be defined during the processing, The database
+consists of relatively referenced text files. The separator of the data
+is the pipeline `|` symbol.
+
+In the first session of `REcoTox`, a file `chemical_properties.csv` is
+created in the database folder. This files contains chemical identifiers
+and chemical properties required for the processing of the chemical data
+in the knowlegdebase and to tag the results.
+
+The chemical property file is dynamically updated and requires also some
+manual curation. It will grow as soon new chemicals are added to the
+knowledgebase.
+
+The `project_folder` contains the `R` script for processing as well as
+the intermediate and final processing files. The naming of the folder is
+arbitrary, but do not use spaces, but underscores (`_`) or hyphens (`-`)
+for separating parts.
+
+To run the queries, a predefined processing script is available on
+`GitHub`
+([`Query_EcoTox_DB.R`](https://github.com/tsufz/REcoTox/blob/main/inst/extdata/Query_Ecotox_DB.R))
+or in the local `REcoTox` package folder.
+
+\newpage
+
+# Using REcoTox
+
+The following tutorial explains the different steps of `REcoTox` in a
+comprehensive demonstration. `REcoTox` includes different interactive
+steps, which require the evaluation of comma separated text files
+(`*.csv`) in an external spreadsheet application (preferable LibreOffice
+[@LibreOffice]).
+
+## Load the REcoTox package
+
+```{r load REcoTox package, eval = FALSE, echo = TRUE, message = FALSE, warning = FALSE}
+# Load the REcoTox package
+library(REcoTox)
+```
+
+## Documentation for MZquant
+
+A detailed description of all functions of `REcoTox` functions is
+available in the `R Documentation`.
+
+```{r R Documentation, echo = TRUE, eval = FALSE}
+# Documentation of REcoTox
+help(package = "REcoTox")
+```
+
+## Preparation of the working environment (for beginners)
+
+The processing in `REcoTox` is interactivally controlled by a processing
+script `Query_EcoTox_DB.R`.
+
+If you run `REcoTox` for the first time, a tutorial project is available
+to demonstrate all important steps of `REcoTox` processing. The
+following script is preparing an example folder in your home directory
+and copies all necessary files in the folder.
+
+```{r initialize folders, echo = TRUE, message = FALSE, warning = FALSE, eval = TRUE}
+# Path of the project folder
+project_folder <- "REcoTox_demo"
+
+database_folder <- system.file("extdata/database_folder", package="REcoTox")
+# The project folder is created in the home directory
+project_path <- normalizePath(ifelse(.Platform$OS.type == "unix",
+    paste0("~/", project_folder),
+    paste0(
+        Sys.getenv("HOMEPATH"),
+        "\\",
+        project_folder
+    )
+))
+
+# An existing folder is deleted
+if (dir.exists(project_folder)) {
+    unlink(project_folder, recursive = TRUE)
+}
+```
+
+This command initializes the project folder and the database folder. It
+copies also the processing script to the project folder.
+
+```{r create project, echo = TRUE, message = FALSE, warning = FALSE, eval = TRUE}
+project <- REcoTox::create_project(database_path = database_folder,
+                          project_path,
+                          initalise_database_project = TRUE, # create the basic project from current ASCII files in DB folder
+                          initalise_project = TRUE, # initializes the project folder
+                          load_default = FALSE) # loads the default project in the project folder in the memoryfault_example = TRUE
+
+file.copy(
+                    from = system.file(
+                        "extdata",
+                        "Query_EcoTox_DB.R",
+                        package = "REcoTox"
+                    ),
+                    to = normalizePath(
+                        path = file.path(
+                            project_folder,
+                            "Query_EcoTox_DB.R"
+                        ),
+                        winslash = "\\",
+                        mustWork = FALSE
+                    ),
+                    overwrite = TRUE
+                )
+
+```
+
+The `project_folder` contains the following files:
+
+```{r list project folder}
+# List files and directories in project_folder
+list.files(project_folder, recursive = TRUE, include.dirs = TRUE)
+```
+
+The `database_folder` contains the following files and folders:
+`chemical_properties.csv` is the file containing the curated chemical
+properties, `results.txt` contains the testing results collected in the
+knowledgebase, and `test.txt` contains the the metadate of the tests.
+
+The folder `validation` contains the files `chemicals.txt` with chemical
+information, the file `references.txt` contains the references and
+`species.txt` the species.
+
+```{r list database folder}
+# List files and directories in project_folder
+list.files(database_folder, recursive = TRUE, include.dirs = TRUE)
+```
+
+It contains only the `Query_EcoTox_DB.R` file.
+
+## Review of the input data
+
+To review the input data, let us look in the data:
+
+```{r view chemical_properties, echo = TRUE, eval = TRUE, message = TRUE}
+# Review of the chemical properties
+chemical_properties <- readr::read_csv(file = normalizePath(path = file.path(
+    database_folder,
+    "chemical_properties.csv"
+), ), show_col_types = FALSE)
+
+kable(
+    chemical_properties %>%
+        head(5),
+    format = "html",
+    digits = 2
+) %>%
+kable_styling("striped", full_width = TRUE) %>% 
+scroll_box(width = "700px", height = "300px")
+```
+
+```{r view results, echo = TRUE, eval = TRUE, message = TRUE}
+# Review of the result table
+results <-
+    readr::read_delim(
+        file = normalizePath(
+            path = file.path(
+                database_folder,
+                "results.txt"
+            ),
+        ),
+        show_col_types = FALSE,
+        delim = "|"
+        
+    )
+
+kable(
+    results %>%
+        head(5),
+    format = "html", digits = 2
+) %>%
+kable_styling("striped", full_width = TRUE) %>% 
+scroll_box(width = "700px", height = "300px")
+```
+
+```{r view chemicals, echo = TRUE, eval = TRUE, message = TRUE}
+# Review of the substance_table
+substances <-
+    readr::read_delim(
+        file = normalizePath(
+            path = file.path(
+                database_folder,
+                "validation",
+                "chemicals.txt"
+            ),
+        ),
+        show_col_types = FALSE,
+        delim = "|"
+        
+    )
+
+kable(
+    substances %>%
+        head(5),
+    format = "html", digits = 2
+) %>%
+kable_styling("striped", full_width = TRUE) %>% 
+scroll_box(width = "700px", height = "300px")
+```
+
+```{r view references, echo = TRUE, eval = TRUE, message = TRUE}
+# Review of the substance_table
+references <-
+    readr::read_delim(
+        file = normalizePath(
+            path = file.path(
+                database_folder,
+                "validation",
+                "references.txt"
+            ),
+        ),
+        show_col_types = FALSE,
+        delim = "|"
+        
+    )
+
+kable(
+    references %>%
+        head(5),
+    format = "html", digits = 2
+) %>%
+kable_styling("striped", full_width = TRUE) %>% 
+scroll_box(width = "700px", height = "300px")
+```
+
+```{r view species, echo = TRUE, eval = TRUE, message = TRUE}
+# Review of the substance_table
+species <-
+    readr::read_delim(
+        file = normalizePath(
+            path = file.path(
+                database_folder,
+                "validation",
+                "species.txt"
+            ),
+        ),
+        show_col_types = FALSE,
+        delim = "|"
+        
+    )
+
+kable(
+    species %>%
+        head(5),
+    format = "html", digits = 2
+) %>%
+kable_styling("striped", full_width = TRUE) %>% 
+scroll_box(width = "700px", height = "300px")
+```
+
+## Preparation of the database environment and initialisation of the project folder
+
+In the first step, the function `create_project` creates the database project and
+initializes the database and project folders:
+
+1. Load the ASCII files.
+
+2. Create a file `chemical_properties.csv` based o the `chemicals.txt` table.
+If this table exists, it is loaded.
+
+3. Store the initial database project in `project.Rdata` in the database folder.
+
+4. Store the initial projcet in `initial_project.Rdata` in the project folder.
+
+### Parameters
+
+- `initialise_database_project` (TRUE/FALSE): Creates the basic database project
+from the current ASCII files in the database folder and (if not existing) stores
+the `chemical_properties.csv` in the database folder.
+
+- `initialise_project` (TRUE/FALSE): Stores the `REcoTox` environment in an initial
+`Rdata` object named `initial_project.Rdata` in the project folder.
+
+- `load_default` (TRUE/FALSE): Loads an existing basic database project from the 
+database folder and stores it in the project.
+
+`chemical_properties.csv`: This tables contains the internal chemical ID `cas_number` (i.e. 
+the cas number in integer format) and related user-curated metadata (e.g., 
+chemical identifiers such as InChIKey, or PubChem CIDs) and chemical property
+data (i.e. log S values). It will be re-used and extended in future
+analyses to minimize curation efforts. If this file exists, it will be loaded
+to the project environment. Because the `chemicals.txt` table only contains `CAS` numbers
+in integer format, a regular CAS number is added (e.g., 1912-24-9 for 1912249).
+
+```{r initialize databases, echo = TRUE, message = FALSE, warning = FALSE, eval = FALSE}
+project <- REcoTox::create_project(database_path = database_folder,
+                          project_path,
+                          initalise_database_project = TRUE,
+                          initalise_project = TRUE,
+                          load_default = FALSE)
+```
+
+## Preparation of the initial project
+In the second step, utilizing the function `prepare_data`, the tables' `test`,
+`results`, `species`, `chemicals`, and `references` are joined IDs `test_id`,
+`cas_number`, `species_number`, and `reference_number`. The initial environment
+is stored in the file `ìnitial_project.Rdata` in the project folder.
+This file will be the same for all analyses related to a database revision.
+Thus, it could be copied from another project to avoid rerunning initial steps.
+
+### Parameters
+
+- `project`: Name of the project environment.
+
+- `load_initial_project` (TRUE/FALSE): Loads the `initial_project.Rdata` of the
+project folder.
+
+- `new_project_path`: The `initial_project.Rdata` contains the project folder
+path where it was initially created. For example, in case of moving the project
+folder or if the `initial_project.Rdata` was copied from another folder, it is
+required to set a new project path.
+
+- `save_project` (TRUE/FALSE): Save the `initial_project.Rdata`. For example,
+in case, the project folder was renewed.
+
+```{r initialize project, echo = TRUE, message = FALSE, warning = FALSE, eval = FALSE}
+project <- REcoTox::prepare_data(project = project,
+                        load_initial_project = FALSE,
+                        new_project_path = NA,
+                        save_project = TRUE
+)
+```
+
+## Processing the data
+In the third step, the function `process_data` reads the following settings to
+query the database accordingly.
+
+A list of relevant endpoints (e.g., EC50) and all relevant species are generated
+and exported to the project folder for review.
+The two files are `ecotoxgroup_endpoint_selection.csv` and
+`ecotoxgroup_species_selection.csv`. The review could be performed in any
+spreadsheet program. The data must be stored in the `comma` delimited format!
+
+The former table contains a field `include_endpoint`, this controls the inclusion
+of each endpoint by setting the value to 0 or 1 (0 = not included, 1 = included).
+Other values are not accepted, and the import of the file in the next processing
+step will be declined. The value 0 is the default, and thus, the endpoints to
+be included should be marked with 1.
+
+The latter table contains a field include_species, this controls the inclusion of each species by setting the value to 0 or 1 (0 = not included, 1 = included). Depending on the settings of species_selection, the preset is different:
+
+- `include_species` is set to 1
+
+- `include_species` is set to 0
+
+- `include_species` is set to 1 for standard test species and set to 0 for other species
+
+Review and edit the tables in a preferred spreadsheet program. If changed,
+save the changes in the same file. The separator must be `comma`.
+
+In this step, the database is queried to select the datasets related to the 
+goals of the analysis.
+
+The queries can be controlled by the following parameters:
+
+- `dosing_group`: Specifies the compartment to which the dosing is referenced (so far only "water_concentration", i.e. result is mg/L)
+
+- `duration_d`: Duration of the exposure in days (e.g. `d`, `dph`, `dpf`)
+
+- `duration_h`: Duration of the exposure in hours (e.g. `h`, `ht`, `hph`, `hpf`, `hbf`, `hv`)
+
+- `duration_m`: Duration of the exposure in minutes (e.g. `mi`)
+
+- `ecotoxgroup`: Species group (e.g. `Algae`, `Crustacean`, `Fish`)
+
+- `effects`: Effect endpoints (e.g. `MOR`, `GRO`, `DEV`)
+
+- `habitat`: Habitat of the ecotoxgroup (i.e. `Non-Soil`, `Water`, `Soil`)
+
+- `kingdoms`: Specification of the `algae` kingdoms (e.g. `Chromista`, `Plantae`, `Monera`)
+
+- `measurements`: Specification of specific measurements
+
+- `min_h`: Minimum duration of the experiment in hours
+
+- `max_h`: Maximum duration of the experiment in hours
+
+- `min_d`: Minimum duration of the experiment in days
+
+- `max_d`: Maximum duration of the experiment in days
+
+- `min_m`: Minimum duration of the experiment in minutes
+
+- `max_m`: Maximum duration of the experiment in minutes
+
+- `species_seleciton`: Selection of species (i.e. `all`, `manual`, `standard_test_species`)
+
+Where `all` selects all species of an `ecotoxgroup`, `manual` expects manual selection in 
+the files mentioned above and `standard_test_species` selects only species marked as
+standardized species.
+
+### Filtering the data
+In the processing step 1, the data in the database is filtered based on the settings
+to extract relevant data of the database.
+
+```{run step 1, echo = TRUE, message = FALSE, warning = FALSE, eval = FALSE}
+
+# set the parameters
+dosing_group = "water_concentration" # i.e. mg/L (only available group in this version)
+duration_d = c("d", "dph", "dpf")
+duration_h = c("h", "ht", "hph", "hpf", "hbf", "hv")
+duration_m = "mi"
+ecotoxgroup = "Algae" # c("Algae", "Crustacean", "Fish")
+effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV") # Algae/Fish
+#effects = c("MOR", "GRO", "POP", "REP", "MPH", "DEV", "ITX") # Crustacean
+habitat = "Water" #c("Non-Soil","Water","Soil")
+kingdoms = NA # vector of specific algae kingdoms: c("Chromista","Plantae","Monera")
+measurements = NA # vector of specific measurements
+min_h = 0
+min_d = 0
+max_h = 120
+max_d = 5
+min_m = 0
+max_m = 7200
+species_selection = "all" # c("all", "manual", "standard_test_species")
+
+# run the processing step
+project <- REcoTox::process_data(project,
+                        dosing_group = dosing_group,
+                        duration_d = duration_h,
+                        duration_h = duration_h,
+                        duration_m = duration_m,
+                        ecotoxgroup = ecotoxgroup,
+                        effects = effects,
+                        habitat = habitat,
+                        kingdoms = kingdoms,
+                        measurements = measurements,
+                        max_d = max_d,
+                        min_d = min_d,
+                        max_h = max_h,
+                        min_h = min_h,
+                        max_m = max_m,
+                        min_m = min_m,
+                        remove_formulation = FALSE,
+                        save_project_steps = FALSE,
+                        species_selection = species_selection
+)
+
+```
+
+This step stores two files in the `project_folder`, `ecotoxgroup_species_selection.csv`
+and `ecotoxgroup_endpoint_selection.csv`. The first block of the file is related to the
+ecotoxgroup specified. The species selection file contains all species extracted
+for review and the endpoint the respective endpoints (e.g. EC50). To include
+species or endpoints, mark the data with `1`, otherwise to exclude, mark with `0`.
+
+### Filtering species and endpoints
+
+After review and saving the files, run the following command. This command
+reads the files and the data is filtered accordingly.
+
+The units in the database are quite divergent and thus a unit conversion is performed
+to transform all units and values to `mg/L`. In case of mol related units,
+the transformation is automated so far the chemical and the molecular weight is 
+already in the database. If not, the file `ecotoxgroup_mol_weight.csv` is exported
+to the `project_folder`.
+
+```{run step 2, echo = TRUE, message = FALSE, warning = FALSE, eval = FALSE}
+project <- REcoTox::process_data(project, save_project_steps = FALSE)
+
+```
+
+### Unit conversion
+
+Review and edit the file `ecotoxgroup_mol_weight.csv` to add the molecular weight to 
+the list. The ecotoxicity data is interactivitely enriched with chemical information
+(e.g. the average mass).
+
+In best case with data linked to [US EPA CompTox Chemicals Dashboard](https://comptox.epa.gov/dashboard/ "US EPA CompTox Chemicals Dashboard")
+for example by using the output of the [batch search](https://comptox.epa.gov/dashboard/batch-search "US EPA CompTox Chemicals Dashboard Batch Search")
+according to Figure 1 and Figure 2.
+
+![Figure1: US EPA CompTox Chemicals Dashboard Batch Search - Enter Identifiers to Search](./figures/Figure_1.png "Figure 1: US EPA CompTox Chemicals Dashboard Batch Search - Enter Identifiers to Search")
+
+![Figure 2: US EPA CompTox Chemicals Dashboard Batch Search - Recommended selection of identifiers and properties](./figures/Figure_2.png "Figure 2: US EPA CompTox Chemicals Dashboard Batch Search - Recommended selection of identifiers and properties")
+
+After update of the mol weight table, run the following command to finalise the
+unit conversion step.
+
+```{run step 3, echo = TRUE, message = FALSE, warning = FALSE, eval = FALSE}
+project <- REcoTox::process_data(project, save_project_steps = FALSE)
+
+```
+### Chemical properties data and final processing
+
+The former processing step creates a file named `ecotoxgroup_chemical_list.csv`.
+Edit this list to include newly added compounds (imputation of phys.-chem. 
+properties and metadata).
+
+To score the quality of the data, the solubility domain of the result is 
+calculated. The calculation requires the experimental or predicted solubility
+of the chemical.
+
+```{run step 4, echo = TRUE, message = FALSE, warning = FALSE, eval = FALSE}
+project <- REcoTox::process_data(project, save_project_steps = FALSE, update_chemicals = FALSE)
+
+```
+
+The file `ecotoxgroup_final_results.csv` is stored in the `project_folder`.
+It contains the results of the processing in the long pivot format.
+
+
+### Preparation of the wide pivot table with the aggregated ecotoxicity information
+
+For final processing and to aggregate the data in the wide pivot format, 
+run the following final step.
+
+```{run step 5, echo = TRUE, message = FALSE, warning = FALSE, eval = FALSE}
+project <- REcoTox::aggregate_results(project = project, quantile = 0.05)
+
+```
+
+``{r view references, echo = TRUE, eval = TRUE, message = TRUE}
+# Review of the substance_table
+references <-
+    readr::read_delim(
+        file = normalizePath(
+            path = file.path(
+                database_folder,
+                "validation",
+                "references.txt"
+            ),
+        ),
+        show_col_types = FALSE,
+        delim = "|"
+        
+    )
+
+kable(
+    references %>%
+        head(5),
+    format = "html", digits = 2
+) %>%
+kable_styling("striped", full_width = TRUE) %>% 
+scroll_box(width = "700px", height = "300px")
+```
+
+An example of the final data:
+
+```{r view pivot tables, echo = FALSE, eval = TRUE, message = TRUE}
+# Review of the privot table
+pivot <-
+    project$object$results_pivot
+
+kable(
+    pivot %>%
+        head(5),
+    format = "html", digits = 2
+) %>%
+kable_styling("striped", full_width = TRUE) %>% 
+scroll_box(width = "700px", height = "300px")
+```
+
+\newpage
+
+# SessionInfo
+
+```{r sessioninfo, echo = TRUE, eval = TRUE, message = FALSE}
+sessionInfo()
+```
+
+\newpage
+
+# References
+
+```{r clean_up, echo = FALSE, results = "asis", eval = FALSE}
+unlink(project_folder, recursive = TRUE)
+```
