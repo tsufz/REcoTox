@@ -1,13 +1,13 @@
 Package: REcoTox
 Type: Package
 Title: REcoTox - a workflow to process US EPA ECOTOX Knowledgebase ASCII files
-Version: 0.4.0
-Date: 2023-5-2
+Version: 0.4.1
+Date: 2023-4-11
 Authors@R: 
     c(person(given = "Tobias",
              family = "Schulze",
              role = c("aut", "cre"),
-             email = "tobias.schulze@ufz.de",
+             email = "tsufz1@gmail.com",
              comment = c(ORCID = "0000-0002-9744-8914")),
       person(given = "Wibke",
              family = "Busch",
@@ -34,7 +34,7 @@ Imports:
     Rdpack,
     readr,
     tibble,
-	  tidyr,
+    tidyr,
     utils,
     webchem
 Suggests: 
@@ -43,7 +43,9 @@ Suggests:
     knitr,
     markdown,
     rmarkdown,
-    testthat
+    testthat,
+    kableExtra,
+    tidyverse
 VignetteBuilder: 
     knitr
 RdMacros: 

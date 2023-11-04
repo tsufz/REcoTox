@@ -1,5 +1,9 @@
 # Changelog
 
+*Version 0.4.1 (4 November 2023)*
+
+- Add vignette
+
 *Version 0.4.0 (2 May 2023)*
 
 - Refactorization of the chemical list and the final results schemes

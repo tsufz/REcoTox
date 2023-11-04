@@ -8,7 +8,7 @@ message: 'To cite package "REcoTox" in publications use:'
 type: software
 title: 'REcoTox: REcoTox - a workflow to process US EPA ECOTOX Knowledgebase ASCII
   files'
-version: 0.4.0
+version: 0.4.1
 abstract: REcoTox is a semi-automated, interactive workflow to process US EPA ECOTOX
   Knowledgebase entire database ASCII files to extract and process ecotoxicological
   data relevant (but not restricted) to the ecotoxicity groups algae, crustaceans,
@@ -18,14 +18,14 @@ abstract: REcoTox is a semi-automated, interactive workflow to process US EPA EC
 authors:
 - family-names: Schulze
   given-names: Tobias
-  email: tobias.schulze@ufz.de
+  email: tsufz1@gmail.com
   orcid: https://orcid.org/0000-0002-9744-8914
 repository: https://bioconductor.org/
 date-released: '2023-05-02'
 contact:
 - family-names: Schulze
   given-names: Tobias
-  email: tobias.schulze@ufz.de
+  email: tsufz1@gmail.com
   orcid: https://orcid.org/0000-0002-9744-8914
 references:
 - type: software
